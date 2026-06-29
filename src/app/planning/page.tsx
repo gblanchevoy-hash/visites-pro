@@ -9,7 +9,7 @@ import {
   formatDate, formatDateLong, getWeekDays, getMonthDays,
   toISODate, isSameDay, addDays,
 } from '@/lib/utils/dates';
-import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo';
+import { calculerSegment, distanceHaversine, formatDuree, getOrsKey } from '@/lib/utils/geo';
 import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';
@@ -126,8 +126,9 @@ export default function PlanningPage() {
   }, [settings, travelCache]);
 
   const fetchTravelTimes = useCallback(async (rdvs: RendezVous[]) => {
-    if (!settings?.ors_api_key || computingRef.current || rdvs.length === 0) return;
-    const dep = settings.adresse_depart_lat ? { lat: settings.adresse_depart_lat, lng: settings.adresse_depart_lng!, id: 'dep' } : null;
+    const orsKey = getOrsKey(settings?.ors_api_key ?? null);
+    if (!orsKey || computingRef.current || rdvs.length === 0) return;
+    const dep = settings?.adresse_depart_lat ? { lat: settings.adresse_depart_lat, lng: settings.adresse_depart_lng!, id: 'dep' } : null;
     const seq: Array<{ lat: number; lng: number; id: string }> = [];
     if (dep) seq.push(dep);
     rdvs.forEach(r => { if (r.patient?.lat && r.patient?.lng) seq.push({ lat: r.patient.lat, lng: r.patient.lng, id: r.id }); });
@@ -138,7 +139,7 @@ export default function PlanningPage() {
       const k = segKey(seq[i].id, seq[i+1].id);
       if (travelCache[k] !== undefined) continue;
       await new Promise(r => setTimeout(r, 350));
-      const res = await calculerSegment(seq[i], seq[i+1], settings.ors_api_key!);
+      const res = await calculerSegment(seq[i], seq[i+1], orsKey);
       updates[k] = res ? { km: res.distance_km, min: res.duree_min } : null;
     }
     if (Object.keys(updates).length) setTravelCache(p => ({ ...p, ...updates }));

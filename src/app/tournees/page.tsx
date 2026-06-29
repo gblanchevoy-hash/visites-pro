@@ -7,7 +7,7 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { RendezVous } from '@/types';
 import { toISODate, formatDate, getWeekDays, addDays } from '@/lib/utils/dates';
-import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine } from '@/lib/utils/geo';
+import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine, getOrsKey } from '@/lib/utils/geo';
 import { exportTourneePDF, exportTourneeExcel } from '@/lib/utils/exports';
 import toast from 'react-hot-toast';
 import { MapPin, Zap, Navigation, FileText, Download, ChevronLeft, ChevronRight, Home, Flag, Car, Clock, ChevronDown, ChevronUp } from 'lucide-react';
@@ -76,7 +76,8 @@ export default function TourneesPage() {
   const depart = hasDepart ? { lat: settings!.adresse_depart_lat!, lng: settings!.adresse_depart_lng! } : null;
 
   const calculer = async () => {
-    if (!settings?.ors_api_key) { toast.error('Configurez votre clé ORS dans Mon Départ'); return; }
+    const orsKey = getOrsKey(settings?.ors_api_key ?? null);
+    if (!orsKey) { toast.error('Aucune clé ORS disponible — configurez-la dans Paramètres'); return; }
     const withCoords = orderedRdvs.filter(r => getRdvCoords(r));
     if (withCoords.length < 1) { toast.error('Aucune visite géolocalisée'); return; }
     setComputing(true);
@@ -87,14 +88,14 @@ export default function TourneesPage() {
     const segs: (Segment | null)[] = [];
     for (let i = 0; i < sequence.length - 1; i++) {
       await new Promise(r => setTimeout(r, 250));
-      const res = await calculerSegment(sequence[i], sequence[i+1], settings!.ors_api_key!);
+      const res = await calculerSegment(sequence[i], sequence[i+1], orsKey);
       segs.push(res ? { km: res.distance_km, min: res.duree_min } : null);
     }
     setSegments(segs);
     setActiveSegments(Array(segs.length).fill(true));
     const pts = sequence.map(s => ({ lat: s.lat, lng: s.lng }));
     if (pts.length >= 2) {
-      const result = await calculerItineraire(pts, settings!.ors_api_key!);
+      const result = await calculerItineraire(pts, orsKey);
       if (result) setRouteGeo(result.geometry);
     }
     setComputing(false);

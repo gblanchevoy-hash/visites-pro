@@ -1,5 +1,11 @@
 import { Patient, GeocodingResult } from '@/types';
 
+// ==================== ORS KEY HELPER ====================
+export function getOrsKey(settingsKey?: string | null): string {
+  // Priority: user's own key → shared env key → empty
+  return settingsKey?.trim() || process.env.NEXT_PUBLIC_ORS_API_KEY?.trim() || '';
+}
+
 // ==================== GEOCODING (Nominatim / OpenStreetMap) ====================
 async function nominatimSearch(query: string): Promise<GeocodingResult | null> {
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=3&countrycodes=fr&addressdetails=1`;

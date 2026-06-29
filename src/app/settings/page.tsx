@@ -107,7 +107,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h2 className="font-semibold text-slate-900">Clé API OpenRouteService</h2>
-                <p className="text-xs text-slate-500">Pour le calcul d'itinéraires et temps de trajet</p>
+                <p className="text-xs text-slate-500">Optionnel — une clé partagée est déjà configurée. Entrez la vôtre pour un quota dédié.</p>
               </div>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-700 space-y-1">
