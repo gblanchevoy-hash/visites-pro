@@ -49,13 +49,25 @@ export async function geocodeAdresse(adresse: string, codePostal: string, ville:
   return null;
 }
 
+// Geocode using French gov API (most accurate for France)
+async function geocodeGouv(adresse: string): Promise<GeocodingResult | null> {
+  try {
+    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(adresse)}&limit=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const f = data.features?.[0];
+    if (f) return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], display_name: f.properties.label };
+  } catch { /* ignore */ }
+  return null;
+}
+
 // Geocode a free-form full address string (for depart page)
 export async function geocodeFullAdresse(fullAdresse: string): Promise<GeocodingResult | null> {
-  const queries = [
-    `${fullAdresse}, France`,
-    fullAdresse,
-  ];
-  for (const query of queries) {
+  // 1. French gov API first (best for France)
+  const gouv = await geocodeGouv(fullAdresse);
+  if (gouv) return gouv;
+  // 2. Nominatim fallback
+  for (const query of [`${fullAdresse}, France`, fullAdresse]) {
     await new Promise((r) => setTimeout(r, 300));
     const result = await nominatimSearch(query);
     if (result) return result;
