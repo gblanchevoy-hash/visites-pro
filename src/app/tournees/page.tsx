@@ -250,9 +250,9 @@ export default function TourneesPage() {
         </div>
       } />
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto">
         {/* Left panel */}
-        <div className="lg:w-[440px] flex-shrink-0 flex flex-col bg-slate-50 overflow-y-auto">
+        <div className="lg:w-[440px] flex-shrink-0 flex flex-col bg-slate-50">
 
           {/* Week selector */}
           <div className="p-3 bg-white border-b border-slate-100">
@@ -311,7 +311,7 @@ export default function TourneesPage() {
               </div>
 
               {/* Stats bar */}
-              <div className="sticky bottom-0 bg-white border-t border-slate-200 shadow-lg">
+              <div className="bg-white border-t border-slate-200 shadow-lg">
                 <button onClick={() => setShowStats(s => !s)} className="w-full flex items-center justify-between px-5 py-3 text-xs text-slate-500 hover:bg-slate-50">
                   <span className="font-semibold uppercase tracking-wide">Résumé · {formatDate(selectedDay, 'd MMM')}</span>
                   {showStats ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -337,7 +337,7 @@ export default function TourneesPage() {
         </div>
 
         {/* Map */}
-        <div className="flex-1 min-h-[300px] p-4 bg-slate-100">
+        <div className="lg:flex-1 h-[500px] lg:h-auto lg:min-h-[600px] p-4 bg-slate-100">
           <TourneeMap
             rdvs={orderedRdvs}
             routeGeo={routeGeo}
