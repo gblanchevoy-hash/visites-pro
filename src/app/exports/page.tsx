@@ -124,7 +124,7 @@ export default function ExportsPage() {
     <AppShell>
       <Topbar title="Exports" subtitle="Générez vos rapports et feuilles de tournée" />
 
-      <div className="flex-1 p-4 lg:p-6 space-y-6 max-w-2xl">
+      <div className="flex-1 p-4 lg:p-6 space-y-6 max-w-2xl overflow-auto">
         {/* Date selector */}
         <div className="card p-5">
           <h2 className="font-semibold text-slate-900 mb-4">Paramètres d'export</h2>

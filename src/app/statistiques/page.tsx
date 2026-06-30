@@ -120,7 +120,7 @@ export default function StatistiquesPage() {
         }
       />
 
-      <div className="flex-1 p-4 lg:p-6 space-y-6">
+      <div className="flex-1 p-4 lg:p-6 space-y-6 overflow-auto">
         {/* KPI annuels */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[

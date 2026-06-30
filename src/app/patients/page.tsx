@@ -58,7 +58,7 @@ export default function PatientsPage() {
         }
       />
 
-      <div className="flex-1 p-4 lg:p-6">
+      <div className="flex-1 p-4 lg:p-6 overflow-auto">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-5">
           <div className="relative flex-1 min-w-[200px]">
