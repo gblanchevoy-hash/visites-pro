@@ -75,43 +75,55 @@ function AuthInner() {
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-900 via-primary-950 to-indigo-900">
       {/* Left branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white">
-        <div className="flex items-center gap-3">
-          <Image src="/icons/logo.png" alt="Mets la gomme !" width={64} height={64} className="rounded-2xl bg-white p-1 shadow-lg" />
-          <span className="text-xl font-bold">Mets la gomme !</span>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden">
+        {/* Background car illustration */}
+        <img src="/icons/mets_la_gomme_white.png" alt="" aria-hidden="true"
+          className="absolute bottom-0 right-0 w-full pointer-events-none"
+          style={{ opacity: 0.12, filter: 'brightness(10)', maxWidth: '600px' }} />
+
+        <div className="flex items-center gap-4 relative">
+          <Image src="/icons/logo.png" alt="Mets la gomme !" width={56} height={56} className="rounded-2xl bg-white p-1 shadow-lg" />
+          <span className="text-2xl font-bold tracking-tight">Mets la gomme !</span>
         </div>
-        <div>
-          <h1 className="text-5xl font-bold leading-tight mb-6">
-            Organisez vos tournées<br />
-            <span className="text-primary-400">avec précision</span>
+
+        <div className="relative">
+          {/* Large illustration above title */}
+          <img src="/icons/mets_la_gomme_white.png" alt="" aria-hidden="true"
+            className="w-3/4 mb-6 pointer-events-none"
+            style={{ opacity: 0.9, filter: 'brightness(10)' }} />
+
+          <h1 className="text-6xl font-black leading-tight mb-4 tracking-tight">
+            Mets la<br />
+            <span className="text-primary-400">gomme !</span>
           </h1>
-          <p className="text-slate-300 text-lg mb-10">
-            Planification, cartographie, kilométrage et statistiques pour les professionnels des soins à domicile.
+          <p className="text-slate-300 text-lg mb-8">
+            Planification, cartographie et kilométrage<br />pour les professionnels des visites à domicile.
           </p>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { icon: '🗺️', title: 'Itinéraires optimisés', desc: "Réduisez vos déplacements avec l'optimisation automatique" },
-              { icon: '📊', title: 'Statistiques détaillées', desc: 'Suivez km parcourus, temps de soin et frais en temps réel' },
-              { icon: '📱', title: 'Application PWA', desc: 'Fonctionne sur tous vos appareils, même hors ligne' },
+              { icon: '🗺️', title: 'Itinéraires optimisés', desc: "Réduisez vos déplacements" },
+              { icon: '📊', title: 'Statistiques détaillées', desc: 'km, temps, frais en temps réel' },
+              { icon: '📱', title: 'Application PWA', desc: 'Tablette, mobile, desktop' },
             ].map(f => (
-              <div key={f.title} className="flex gap-4 items-start">
-                <span className="text-2xl">{f.icon}</span>
-                <div><p className="font-semibold">{f.title}</p><p className="text-slate-400 text-sm">{f.desc}</p></div>
+              <div key={f.title} className="flex gap-3 items-center">
+                <span className="text-xl">{f.icon}</span>
+                <div><span className="font-semibold">{f.title}</span> — <span className="text-slate-400 text-sm">{f.desc}</span></div>
               </div>
             ))}
           </div>
         </div>
-        <p className="text-slate-500 text-sm">© 2026 Mets la gomme ! Tous droits réservés.</p>
+        <p className="text-slate-600 text-sm relative">© 2026 Mets la gomme ! Tous droits réservés.</p>
       </div>
 
       {/* Right form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
-            {/* Mobile logo */}
-            <div className="flex items-center gap-3 mb-8 lg:hidden">
-              <Image src="/icons/logo.png" alt="Mets la gomme !" width={36} height={36} className="rounded-xl" />
-              <span className="font-bold text-lg text-slate-900">Mets la gomme !</span>
+            {/* Mobile logo + title */}
+            <div className="flex flex-col items-center gap-3 mb-8 lg:hidden">
+              <Image src="/icons/mets_la_gomme_white.png" alt="Mets la gomme !" width={180} height={120}
+                className="w-48 h-auto" style={{ filter: 'invert(29%) sepia(89%) saturate(1600%) hue-rotate(210deg)' }} />
+              <span className="font-black text-2xl text-slate-900 tracking-tight">Mets la gomme !</span>
             </div>
 
             <h2 className="text-2xl font-bold text-slate-900 mb-1">

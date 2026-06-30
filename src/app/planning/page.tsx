@@ -341,6 +341,14 @@ export default function PlanningPage() {
     const card = (
       <div
         onPointerDown={onPointerDown}
+        onMouseEnter={hasInfo ? (e) => {
+          if (e.buttons !== 0) return;
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const sidebarWidth = 260;
+          const x = Math.max(sidebarWidth + 8, rect.left);
+          // Store tooltip info in a custom event to avoid state in RdvCard
+          (e.currentTarget as HTMLElement).dataset.tooltip = JSON.stringify({ x: Math.min(x, window.innerWidth - 280), y: rect.bottom + 10 });
+        } : undefined}
         className={cn('absolute select-none z-20 transition-all duration-100 group',
           isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:scale-[1.01] hover:shadow-md')}
         style={{
@@ -378,7 +386,7 @@ export default function PlanningPage() {
         )}
       </div>
     );
-    return hasInfo ? <NoteTooltip content={tooltipContent}>{card}</NoteTooltip> : card;
+    return hasInfo ? <NoteTooltip content={tooltipContent} style={style}>{card}</NoteTooltip> : card;
   };
 
   // ── Day View ──

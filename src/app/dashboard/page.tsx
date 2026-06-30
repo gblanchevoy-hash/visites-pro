@@ -46,13 +46,13 @@ export default function DashboardPage() {
           <path d="M180 0 Q130 50 180 100" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="4 8" />
         </svg>
 
-        {/* Car illustration — white, right side, decorative */}
+        {/* Car illustration — white, right side */}
         <img
           src="/icons/mets_la_gomme_white.png"
           alt=""
           aria-hidden="true"
-          className="absolute right-0 bottom-0 h-full max-h-28 w-auto opacity-20 pointer-events-none object-contain object-right-bottom"
-          style={{ mixBlendMode: 'screen' }}
+          className="absolute right-2 bottom-0 pointer-events-none"
+          style={{ height: '110%', maxHeight: '160px', width: 'auto', opacity: 0.55, filter: 'brightness(10)' }}
         />
 
         <div className="relative">
