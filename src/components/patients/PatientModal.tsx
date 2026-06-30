@@ -68,7 +68,9 @@ export default function PatientModal({ patient, onClose }: Props) {
     if (patient) {
       const { data, error } = await supabase.from('patients').update(payload).eq('id', patient.id).select().single();
       if (error) { toast.error('Erreur mise à jour'); setLoading(false); return; }
-      updatePatient(data as Patient);
+      const updated = data as Patient;
+      updatePatient(updated);
+      pushHistory({ type: 'UPDATE_PATIENT', before: patient, after: updated });
       toast.success('Patient mis à jour');
     } else {
       const { data, error } = await supabase.from('patients').insert(payload).select().single();

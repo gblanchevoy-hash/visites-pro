@@ -6,7 +6,7 @@ import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { RendezVous } from '@/types';
-import { toISODate, formatDate, getWeekDays, addDays } from '@/lib/utils/dates';
+import { toISODate, formatDate, getWeekDays, addDays, addMinutes } from '@/lib/utils/dates';
 import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine } from '@/lib/utils/geo';
 import { exportTourneePDF, exportTourneeExcel } from '@/lib/utils/exports';
 import toast from 'react-hot-toast';
@@ -42,7 +42,7 @@ function getRdvCoords(rdv: RendezVous) {
 }
 
 export default function TourneesPage() {
-  const { settings, user, updatePatient } = useAppStore();
+  const { settings, user, updatePatient, pushHistory } = useAppStore();
   const [weekStart, setWeekStart] = useState(() => getWeekDays(new Date())[0]);
   const weekDays = getWeekDays(weekStart);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
@@ -132,16 +132,47 @@ export default function TourneesPage() {
     toast.success('Position mise à jour');
   };
 
-  const optimiser = () => {
+  const optimiser = async () => {
     if (!depart) { toast.error('Configurez votre adresse de départ'); return; }
     const withCoords = orderedRdvs.filter(r => getRdvCoords(r));
     if (withCoords.length < 2) { toast('Au moins 2 visites géolocalisées sont nécessaires', { icon: 'ℹ️' }); return; }
     setOptimizing(true);
+
     const enriched = orderedRdvs.map(r => ({ ...r, lat: getRdvCoords(r)?.lat ?? undefined, lng: getRdvCoords(r)?.lng ?? undefined }));
-    const optimised = optimiserTournee(enriched, depart) as unknown as RendezVous[];
-    setManualOrder(optimised.map(r => r.id));
+    const optimisedOrder = optimiserTournee(enriched, depart) as unknown as RendezVous[];
+
+    // Reassign sequential time slots in the new order, preserving each visit's own duration
+    // and starting from the day's configured start time (or the earliest current heure_debut).
+    const dayStart = settings?.heure_debut_journee ?? orderedRdvs[0]?.heure_debut ?? '08:00';
+    let cursor = dayStart;
+    const before = optimisedOrder.map(r => orderedRdvs.find(o => o.id === r.id)!).filter(Boolean);
+    const after: RendezVous[] = [];
+    for (const rdv of optimisedOrder) {
+      const heure_debut = cursor;
+      const heure_fin = addMinutes(cursor, rdv.duree_minutes);
+      after.push({ ...rdv, heure_debut, heure_fin });
+      cursor = heure_fin;
+    }
+
+    // Persist new times to Supabase
+    try {
+      await Promise.all(after.map(r =>
+        supabase.from('rendez_vous').update({ heure_debut: r.heure_debut, heure_fin: r.heure_fin }).eq('id', r.id)
+      ));
+    } catch {
+      toast.error('Erreur lors de la sauvegarde des nouveaux horaires');
+      setOptimizing(false);
+      return;
+    }
+
+    setAllRdvs(prev => {
+      const byId = new Map(after.map(r => [r.id, r]));
+      return prev.map(r => byId.get(r.id) ?? r);
+    });
+    pushHistory({ type: 'BATCH_REORDER_RDV', before, after, label: `Optimisation tournée du ${formatDate(selectedDay, 'd MMM')}` });
+    setManualOrder(after.map(r => r.id));
     setSegments([]); setActiveSegments([]); setOptimizing(false);
-    toast.success('Tournée optimisée ! Cliquez "Calculer l\'itinéraire" pour voir les nouveaux trajets.');
+    toast.success('Tournée optimisée ! Horaires mis à jour — cliquez "Calculer l\'itinéraire" pour voir les trajets.');
   };
 
   const totalKm  = segments.reduce((s, seg) => s + (seg?.km ?? 0), 0);

@@ -11,7 +11,7 @@ import { Search, Plus, Edit2, Trash2, Phone, Mail, MapPin, Filter, X } from 'luc
 import PatientModal from '@/components/patients/PatientModal';
 
 export default function PatientsPage() {
-  const { patients, setPatients, user } = useAppStore();
+  const { patients, setPatients, user, pushHistory } = useAppStore();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -32,6 +32,7 @@ export default function PatientsPage() {
     const { error } = await supabase.from('patients').update({ actif: false }).eq('id', p.id);
     if (error) { toast.error('Erreur suppression'); return; }
     setPatients(patients.filter((pat) => pat.id !== p.id));
+    pushHistory({ type: 'DELETE_PATIENT', patient: p });
     toast.success('Patient supprimé');
   };
 
