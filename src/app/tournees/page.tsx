@@ -22,6 +22,8 @@ const TourneeMap = dynamic(() => import('@/components/map/TourneeMap'), {
   ),
 });
 
+const MiniMapPicker = dynamic(() => import('@/components/ui/MiniMapPicker'), { ssr: false });
+
 interface Segment { km: number; min: number; }
 const PIN_COLORS = ['#2563eb','#16a34a','#dc2626','#9333ea','#ea580c','#0891b2','#be185d','#ca8a04'];
 
@@ -40,7 +42,7 @@ function getRdvCoords(rdv: RendezVous) {
 }
 
 export default function TourneesPage() {
-  const { settings, user } = useAppStore();
+  const { settings, user, updatePatient } = useAppStore();
   const [weekStart, setWeekStart] = useState(() => getWeekDays(new Date())[0]);
   const weekDays = getWeekDays(weekStart);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
@@ -111,6 +113,25 @@ export default function TourneesPage() {
     toast.success('Itinéraire calculé !');
   };
 
+  // Save adjusted GPS coords back to the right table (patient or RDV occasionnel)
+  const handleCoordsUpdated = async (rdv: RendezVous, lat: number, lng: number) => {
+    if (rdv.patient_id) {
+      const { error } = await supabase.from('patients').update({ lat, lng }).eq('id', rdv.patient_id);
+      if (error) { toast.error('Erreur sauvegarde position'); return; }
+      setAllRdvs(prev => prev.map(r => r.patient_id === rdv.patient_id && r.patient
+        ? { ...r, patient: { ...r.patient, lat, lng } } : r));
+      // Keep the global patients store in sync (used by the Patients page)
+      const updatedPatient = allRdvs.find(r => r.patient_id === rdv.patient_id)?.patient;
+      if (updatedPatient) updatePatient({ ...updatedPatient, lat, lng });
+    } else {
+      const { error } = await supabase.from('rendez_vous').update({ lat, lng }).eq('id', rdv.id);
+      if (error) { toast.error('Erreur sauvegarde position'); return; }
+      setAllRdvs(prev => prev.map(r => r.id === rdv.id ? { ...r, lat, lng } : r));
+    }
+    setSegments([]); setRouteGeo(null); setActiveSegments([]);
+    toast.success('Position mise à jour');
+  };
+
   const optimiser = () => {
     if (!depart) { toast.error('Configurez votre adresse de départ'); return; }
     const withCoords = orderedRdvs.filter(r => getRdvCoords(r));
@@ -163,24 +184,9 @@ export default function TourneesPage() {
       const color = PIN_COLORS[i % PIN_COLORS.length];
       const segAfterIdx = hasDepart ? i + 1 : i;
       const isLast = i === orderedRdvs.length - 1;
-      const coords = getRdvCoords(rdv);
       items.push(
-        <div key={rdv.id} className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg flex-shrink-0 text-white font-bold text-sm" style={{ backgroundColor: color }}>{i+1}</div>
-          <div className="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold text-slate-900 text-sm">{getRdvLabel(rdv)}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{rdv.heure_debut.replace(':','h')} – {rdv.heure_fin.replace(':','h')}</p>
-              </div>
-              <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-semibold text-slate-500">{i+1}</span>
-              </div>
-            </div>
-            {rdv.patient?.adresse && <p className="text-[11px] text-slate-400 mt-1.5 truncate">{rdv.patient.adresse}, {rdv.patient.ville}</p>}
-            {!coords && <p className="text-[10px] text-amber-600 mt-1">⚠ Adresse non géolocalisée — modifiez le RDV et resélectionnez l'adresse</p>}
-          </div>
-        </div>
+        <VisitCard key={rdv.id} rdv={rdv} index={i} color={color}
+          onCoordsUpdated={(lat, lng) => handleCoordsUpdated(rdv, lat, lng)} />
       );
       if (!isLast) {
         items.push(<SegRow key={`seg-${rdv.id}`} seg={segments[segAfterIdx] ?? null} color={PIN_COLORS[(i+1) % PIN_COLORS.length]} segIdx={segAfterIdx} active={activeSegments[segAfterIdx] !== false} onToggle={i => setActiveSegments(p => { const n=[...p]; n[i]=!n[i]; return n; })} />);
@@ -329,6 +335,49 @@ function SegRow({ seg, color, segIdx, active, onToggle }: { seg: Segment | null;
         style={{ borderColor: active ? color : '#cbd5e1', backgroundColor: active ? color : 'transparent' }}>
         {active && <span className="text-white text-[10px] font-bold">✓</span>}
       </button>
+    </div>
+  );
+}
+
+// ── Visit card with optional GPS fine-tune map ──
+function VisitCard({ rdv, index, color, onCoordsUpdated }: {
+  rdv: RendezVous; index: number; color: string;
+  onCoordsUpdated: (lat: number, lng: number) => void;
+}) {
+  const [showMap, setShowMap] = useState(false);
+  const coords = getRdvCoords(rdv);
+
+  return (
+    <div className="flex items-start gap-4">
+      <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg flex-shrink-0 text-white font-bold text-sm" style={{ backgroundColor: color }}>{index+1}</div>
+      <div className="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="font-semibold text-slate-900 text-sm">{getRdvLabel(rdv)}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{rdv.heure_debut.replace(':','h')} – {rdv.heure_fin.replace(':','h')}</p>
+          </div>
+          <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-semibold text-slate-500">{index+1}</span>
+          </div>
+        </div>
+        {rdv.patient?.adresse && <p className="text-[11px] text-slate-400 mt-1.5 truncate">{rdv.patient.adresse}, {rdv.patient.ville}</p>}
+        {!coords && <p className="text-[10px] text-amber-600 mt-1">⚠ Adresse non géolocalisée — modifiez le RDV et resélectionnez l'adresse</p>}
+
+        {coords && (
+          <>
+            <button onClick={() => setShowMap(s => !s)}
+              className="flex items-center gap-1.5 text-[11px] text-primary-600 font-medium hover:text-primary-700 transition-colors mt-2">
+              {showMap ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <MapPin className="w-3 h-3" />}
+              {showMap ? 'Masquer la carte' : 'Affiner la position'}
+            </button>
+            {showMap && (
+              <div className="mt-2">
+                <MiniMapPicker lat={coords.lat} lng={coords.lng} onChange={onCoordsUpdated} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
