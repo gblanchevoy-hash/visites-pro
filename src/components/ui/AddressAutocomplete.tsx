@@ -1,8 +1,11 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { MapPin, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { searchAdresses } from '@/lib/utils/geo';
 import { useAppStore } from '@/lib/stores/appStore';
+
+const MiniMapPicker = dynamic(() => import('./MiniMapPicker'), { ssr: false });
 
 interface SelectResult {
   adresse: string;
@@ -18,19 +21,23 @@ interface Props {
   onSelect?: (result: SelectResult) => void;
   placeholder?: string;
   className?: string;
+  /** Show a draggable mini-map after an address is selected, to fine-tune GPS coords */
+  allowMapAdjust?: boolean;
 }
 
-// Small client-side cache so re-typing the same query doesn't re-hit the backend
 const sessionCache = new Map<string, Awaited<ReturnType<typeof searchAdresses>>>();
 
-export default function AddressAutocomplete({ value, onChange, onSelect, placeholder, className }: Props) {
+export default function AddressAutocomplete({ value, onChange, onSelect, placeholder, className, allowMapAdjust = true }: Props) {
   const { user } = useAppStore();
   const [suggestions, setSuggestions] = useState<Awaited<ReturnType<typeof searchAdresses>>>([]);
   const [loading, setLoading]         = useState(false);
   const [open, setOpen]               = useState(false);
+  const [coords, setCoords]           = useState<{ lat: number; lng: number } | null>(null);
+  const [showMap, setShowMap]         = useState(false);
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const reqIdRef      = useRef(0); // guards against out-of-order responses
+  const reqIdRef      = useRef(0);
+  const lastResultRef = useRef<SelectResult | null>(null);
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 3) { setSuggestions([]); setOpen(false); return; }
@@ -46,7 +53,6 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
     const thisReqId = ++reqIdRef.current;
     setLoading(true);
     const results = await searchAdresses(q, user?.id);
-    // Ignore stale responses (a newer request was fired in the meantime)
     if (thisReqId !== reqIdRef.current) return;
 
     sessionCache.set(cacheKey, results);
@@ -62,8 +68,8 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
 
   const handleChange = (v: string) => {
     onChange(v);
+    setShowMap(false); // typing again invalidates the previous pin
     if (timerRef.current) clearTimeout(timerRef.current);
-    // 300ms debounce as specified
     timerRef.current = setTimeout(() => search(v), 300);
   };
 
@@ -71,9 +77,22 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
     const adresse = [s.housenumber, s.street].filter(Boolean).join(' ') || s.label.split(',')[0].trim();
     const cp = s.postcode ?? '';
     const ville = s.city ?? '';
+    const result: SelectResult = { adresse, codePostal: cp, ville, lat: s.lat, lng: s.lng };
     onChange(s.label);
     setSuggestions([]); setOpen(false);
-    onSelect?.({ adresse, codePostal: cp, ville, lat: s.lat, lng: s.lng });
+    setCoords({ lat: s.lat, lng: s.lng });
+    lastResultRef.current = result;
+    if (allowMapAdjust) setShowMap(true);
+    onSelect?.(result);
+  };
+
+  const handleMapDrag = (lat: number, lng: number) => {
+    setCoords({ lat, lng });
+    if (lastResultRef.current) {
+      const updated = { ...lastResultRef.current, lat, lng };
+      lastResultRef.current = updated;
+      onSelect?.(updated);
+    }
   };
 
   useEffect(() => {
@@ -120,6 +139,22 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Mini-map to fine-tune the pin after selection — handles lieux-dits / imprecise matches */}
+      {allowMapAdjust && coords && (
+        <div className="mt-2">
+          <button type="button" onClick={() => setShowMap(s => !s)}
+            className="flex items-center gap-1.5 text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors">
+            {showMap ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {showMap ? 'Masquer la carte' : 'Affiner la position sur la carte'}
+          </button>
+          {showMap && (
+            <div className="mt-2">
+              <MiniMapPicker lat={coords.lat} lng={coords.lng} onChange={handleMapDrag} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
