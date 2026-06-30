@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
@@ -10,7 +11,7 @@ import {
   toISODate, isSameDay, addDays,
 } from '@/lib/utils/dates';
 import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo';
-import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft, FileText, Users, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';
 import NoteTooltip from '@/components/ui/NoteTooltip';
@@ -70,6 +71,17 @@ function getRdvLabel(rdv: RendezVous) {
   return 'Passage';
 }
 
+// Re-renders every minute so the "current time" line stays accurate without a full page refresh
+function useNowMinute() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const interval = setInterval(tick, 30_000); // check twice a minute, cheap
+    return () => clearInterval(interval);
+  }, []);
+  return now;
+}
+
 export default function PlanningPage() {
   const { rendezVous, setRendezVous, updateRendezVous, pushHistory, user, settings } = useAppStore();
   const [view, setView]         = useState<ViewMode>('semaine');
@@ -80,7 +92,6 @@ export default function PlanningPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [draggingId, setDraggingId]   = useState<string | null>(null);
   const [travelCache, setTravelCache] = useState<Record<string, { km: number; min: number } | null>>({});
-  const [showStats, setShowStats]     = useState(true);
   const computingRef = useRef(false);
   const ghostRef     = useRef<HTMLDivElement | null>(null);
 
@@ -167,6 +178,9 @@ export default function PlanningPage() {
     const dr = rdvsForDate(d);
     return dr.map((_, i) => getSegment(dr, i)?.min ?? 0);
   }).reduce((a, b) => a + b, 0);
+  const weekPatients = new Set(
+    weekRdvs.map(r => r.patient_id ?? getRdvLabel(r))
+  ).size;
 
   // ── Ghost drag ──
   const createGhost = (rdv: RendezVous, x: number, y: number) => {
@@ -362,6 +376,11 @@ export default function PlanningPage() {
   const DayView = () => {
     const ref = useRef<HTMLDivElement>(null);
     const dayRdvs = rdvsForDate(currentDate);
+    const now = useNowMinute();
+    const isToday = isSameDay(currentDate, now);
+    const nowTop = (now.getHours() * 60 + now.getMinutes() - DAY_START * 60) / 60 * HOUR_HEIGHT;
+    const showNowLine = isToday && now.getHours() >= DAY_START && now.getHours() < DAY_START + HOURS.length;
+
     return (
       <div className="flex-1 overflow-y-auto" style={{ background: '#f8fafc' }}>
         <div className="relative mx-4 mt-2" ref={ref}>
@@ -374,6 +393,16 @@ export default function PlanningPage() {
                 onClick={() => { if (!draggingId) openNew(toISODate(currentDate), `${String(h).padStart(2,'0')}:00`); }} />
             </div>
           ))}
+          {/* Current time indicator */}
+          {showNowLine && (
+            <div className="absolute left-0 right-0 z-30 pointer-events-none flex items-center" style={{ top: `${nowTop}px` }}>
+              <div className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-white flex-shrink-0" style={{ background: '#2563eb' }}>
+                {now.getHours().toString().padStart(2,'0')}:{now.getMinutes().toString().padStart(2,'0')}
+              </div>
+              <div className="flex-1 h-[2px]" style={{ background: '#2563eb' }} />
+              <div className="w-2 h-2 rounded-full -mr-1" style={{ background: '#2563eb' }} />
+            </div>
+          )}
           {dayRdvs.map((rdv, idx) => {
             const top = timeToTop(rdv.heure_debut);
             const h   = Math.max((rdv.duree_minutes / 60) * HOUR_HEIGHT, 36);
@@ -400,6 +429,13 @@ export default function PlanningPage() {
   const WeekView = () => {
     const ref  = useRef<HTMLDivElement>(null);
     const days = getWeekDays(currentDate);
+    const now = useNowMinute();
+    const todayIdx = days.findIndex(d => isSameDay(d, now));
+    const nowTop = (now.getHours() * 60 + now.getMinutes() - DAY_START * 60) / 60 * HOUR_HEIGHT;
+    const showNowLine = todayIdx >= 0 && now.getHours() >= DAY_START && now.getHours() < DAY_START + HOURS.length;
+    const todayLeft = `calc(56px + ${todayIdx} * (100% - 56px) / 7)`;
+    const todayWidth = `calc((100% - 56px) / 7)`;
+
     return (
       <div className="flex-1 overflow-auto" style={{ background: '#f8fafc' }}>
         {/* Day header */}
@@ -434,6 +470,16 @@ export default function PlanningPage() {
               ))}
             </div>
           ))}
+          {/* Current time indicator — only under today's column */}
+          {showNowLine && (
+            <div className="absolute z-30 pointer-events-none flex items-center"
+              style={{ top: `${nowTop}px`, left: todayLeft, width: todayWidth }}>
+              <div className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex-shrink-0 -ml-px" style={{ background: '#2563eb' }}>
+                {now.getHours().toString().padStart(2,'0')}:{now.getMinutes().toString().padStart(2,'0')}
+              </div>
+              <div className="flex-1 h-[2px]" style={{ background: '#2563eb' }} />
+            </div>
+          )}
           {/* RDV cards */}
           {days.map((day, di) => {
             const dayRdvs = rdvsForDate(day);
@@ -554,38 +600,57 @@ export default function PlanningPage() {
       {/* Bottom stats bar — week view only */}
       {view === 'semaine' && (
         <div className="flex-shrink-0 bg-white border-t border-slate-200 shadow-lg">
-          <button onClick={() => setShowStats(s => !s)}
-            className="sr-only">toggle</button>
-          <div className="flex items-center px-6 py-3 gap-6">
+          <div className="flex items-center justify-between px-6 py-3 gap-6 flex-wrap">
+            {/* Récapitulatif label */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#eff6ff' }}>
-                <MapPin className="w-5 h-5" style={{ color: '#2563eb' }} />
+                <Calendar className="w-5 h-5" style={{ color: '#2563eb' }} />
               </div>
               <div>
-                <p className="text-[11px] text-slate-400 font-medium">Total trajets</p>
+                <p className="text-[13px] font-semibold text-slate-800">Récapitulatif de la semaine</p>
+                <p className="text-[11px] text-slate-400">{weekRdvs.length} rendez-vous planifié{weekRdvs.length > 1 ? 's' : ''}</p>
+              </div>
+            </div>
+
+            <div className="hidden md:block w-px h-10 bg-slate-100" />
+
+            {/* KPIs */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                <Car className="w-5 h-5" style={{ color: '#16a34a' }} />
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-400 font-medium">Distance totale</p>
                 <p className="text-[17px] font-bold text-slate-900">{weekKm > 0 ? `${weekKm.toFixed(1)} km` : '— km'}</p>
               </div>
             </div>
-            <div className="w-px h-10 bg-slate-100" />
+            <div className="hidden md:block w-px h-10 bg-slate-100" />
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#f0fdf4' }}>
-                <Clock className="w-5 h-5" style={{ color: '#16a34a' }} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fdf4ff' }}>
+                <Clock className="w-5 h-5" style={{ color: '#9333ea' }} />
               </div>
               <div>
-                <p className="text-[11px] text-slate-400 font-medium">Temps de trajet</p>
+                <p className="text-[11px] text-slate-400 font-medium">Durée totale</p>
                 <p className="text-[17px] font-bold text-slate-900">{weekMin > 0 ? formatDuree(weekMin) : '—'}</p>
               </div>
             </div>
-            <div className="w-px h-10 bg-slate-100" />
+            <div className="hidden md:block w-px h-10 bg-slate-100" />
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#f5f3ff' }}>
-                <Calendar className="w-5 h-5" style={{ color: '#7c3aed' }} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff7ed' }}>
+                <Users className="w-5 h-5" style={{ color: '#ea580c' }} />
               </div>
               <div>
-                <p className="text-[11px] text-slate-400 font-medium">Rendez-vous</p>
-                <p className="text-[17px] font-bold text-slate-900">{weekRdvs.length}</p>
+                <p className="text-[11px] text-slate-400 font-medium">Patients différents</p>
+                <p className="text-[17px] font-bold text-slate-900">{weekPatients}</p>
               </div>
             </div>
+
+            {/* CTA */}
+            <Link href="/tournees"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all hover:shadow-md"
+              style={{ background: '#eff6ff', color: '#2563eb' }}>
+              Voir les tournées <ArrowRightIcon className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       )}
