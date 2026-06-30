@@ -206,8 +206,16 @@ export default function PlanningPage() {
   const dragState = useRef<{ rdv: RendezVous; rect: DOMRect; days?: Date[]; moved: boolean } | null>(null);
   const DRAG_THRESHOLD = 8;
 
-  const startDrag = useCallback((e: React.MouseEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
+  const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
     e.preventDefault(); e.stopPropagation();
+
+    // On touch devices (tablets, phones) skip the press-and-drag logic entirely —
+    // a tap should just open the edit modal immediately, no ghost/drag confusion.
+    if (e.pointerType === 'touch') {
+      setEditRdv(rdv); setShowModal(true);
+      return;
+    }
+
     const sx = e.clientX, sy = e.clientY;
     dragState.current = { rdv, rect: container.getBoundingClientRect(), days, moved: false };
 
@@ -280,10 +288,10 @@ export default function PlanningPage() {
   };
 
   // ── RDV Card block ──
-  const RdvCard = ({ rdv, style, onMouseDown }: {
+  const RdvCard = ({ rdv, style, onPointerDown }: {
     rdv: RendezVous;
     style: React.CSSProperties;
-    onMouseDown: (e: React.MouseEvent) => void;
+    onPointerDown: (e: React.PointerEvent) => void;
   }) => {
     const { dot, border, bg, hColor } = getRdvColors(rdv);
     const isDrag = draggingId === rdv.id;
@@ -332,7 +340,7 @@ export default function PlanningPage() {
 
     const card = (
       <div
-        onMouseDown={onMouseDown}
+        onPointerDown={onPointerDown}
         className={cn('absolute select-none z-20 transition-all duration-100 group',
           isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:scale-[1.01] hover:shadow-md')}
         style={{
@@ -343,6 +351,7 @@ export default function PlanningPage() {
           boxShadow: isDrag ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
           padding: '8px 10px',
           overflow: 'hidden',
+          touchAction: 'manipulation',
         }}>
         {/* Header row: time + dot */}
         <div className="flex items-center justify-between gap-1">
@@ -416,7 +425,7 @@ export default function PlanningPage() {
                 )}
                 <RdvCard rdv={rdv}
                   style={{ top: `${top}px`, height: `${h}px`, left: '56px', right: '4px' }}
-                  onMouseDown={e => ref.current && startDrag(e, rdv, ref.current)} />
+                  onPointerDown={e => ref.current && startDrag(e, rdv, ref.current)} />
               </div>
             );
           })}
@@ -499,7 +508,7 @@ export default function PlanningPage() {
                   )}
                   <RdvCard rdv={rdv}
                     style={{ top: `${top}px`, height: `${h}px`, left, width: w }}
-                    onMouseDown={e => ref.current && startDrag(e, rdv, ref.current, days)} />
+                    onPointerDown={e => ref.current && startDrag(e, rdv, ref.current, days)} />
                 </div>
               );
             });

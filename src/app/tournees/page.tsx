@@ -362,9 +362,11 @@ function SegRow({ seg, color, segIdx, active, onToggle }: { seg: Segment | null;
           : <span className="text-slate-400 text-xs italic">Calculez pour voir le trajet</span>}
       </div>
       <button onClick={() => onToggle(segIdx)} title={active ? 'Masquer ce tracé' : 'Afficher ce tracé'}
-        className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0"
-        style={{ borderColor: active ? color : '#cbd5e1', backgroundColor: active ? color : 'transparent' }}>
-        {active && <span className="text-white text-[10px] font-bold">✓</span>}
+        className="w-11 h-11 -m-2.5 flex items-center justify-center transition-all flex-shrink-0">
+        <span className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all"
+          style={{ borderColor: active ? color : '#cbd5e1', backgroundColor: active ? color : 'transparent' }}>
+          {active && <span className="text-white text-[10px] font-bold">✓</span>}
+        </span>
       </button>
     </div>
   );
