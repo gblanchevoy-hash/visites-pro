@@ -138,7 +138,7 @@ export default function ExportsPage() {
               <label className="label">Année pour les rapports</label>
               <select className="input" value={exportYear}
                 onChange={(e) => setExportYear(Number(e.target.value))}>
-                {[2022, 2023, 2024, 2025].map((y) => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2022 + i).map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
