@@ -3,10 +3,10 @@ import '@/styles/globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'VisitePro — Organisation de tournées à domicile',
+  title: 'Mets la gomme ! — Gestion de tournées à domicile',
   description: 'Application professionnelle pour organiser vos visites à domicile, optimiser vos tournées et calculer vos frais kilométriques.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'VisitePro' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Mets la gomme !' },
   formatDetection: { telephone: false },
   icons: {
     icon: '/icons/icon-192x192.png',

@@ -93,9 +93,9 @@ export default function OnboardingPage() {
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8">
             <div className="w-20 h-20 bg-white rounded-3xl shadow-lg flex items-center justify-center mb-4">
-              <Image src="/icons/logo.png" alt="VisitePro" width={64} height={64} className="rounded-2xl" />
+              <Image src="/icons/logo.png" alt="Mets la gomme !" width={64} height={64} className="rounded-2xl" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Bienvenue sur VisitePro !</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Bienvenue sur Mets la gomme ! !</h1>
             <p className="text-slate-500 text-sm mt-1 text-center">
               Avant de commencer, choisissez comment vous souhaitez être appelé.
             </p>

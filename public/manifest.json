@@ -1,6 +1,6 @@
 {
-  "name": "VisitePro — Tournées à domicile",
-  "short_name": "VisitePro",
+  "name": "Mets la gomme ! — Gestion de tournées",
+  "short_name": "Mets la gomme !",
   "description": "Organisation professionnelle de visites à domicile",
   "start_url": "/dashboard",
   "display": "standalone",

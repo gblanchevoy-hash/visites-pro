@@ -77,8 +77,8 @@ function AuthInner() {
       {/* Left branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white">
         <div className="flex items-center gap-3">
-          <Image src="/icons/logo.png" alt="VisitePro" width={64} height={64} className="rounded-2xl bg-white p-1 shadow-lg" />
-          <span className="text-xl font-bold">VisitePro</span>
+          <Image src="/icons/logo.png" alt="Mets la gomme !" width={64} height={64} className="rounded-2xl bg-white p-1 shadow-lg" />
+          <span className="text-xl font-bold">Mets la gomme !</span>
         </div>
         <div>
           <h1 className="text-5xl font-bold leading-tight mb-6">
@@ -101,7 +101,7 @@ function AuthInner() {
             ))}
           </div>
         </div>
-        <p className="text-slate-500 text-sm">© 2026 VisitePro. Tous droits réservés.</p>
+        <p className="text-slate-500 text-sm">© 2026 Mets la gomme ! Tous droits réservés.</p>
       </div>
 
       {/* Right form */}
@@ -110,8 +110,8 @@ function AuthInner() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* Mobile logo */}
             <div className="flex items-center gap-3 mb-8 lg:hidden">
-              <Image src="/icons/logo.png" alt="VisitePro" width={36} height={36} className="rounded-xl" />
-              <span className="font-bold text-lg text-slate-900">VisitePro</span>
+              <Image src="/icons/logo.png" alt="Mets la gomme !" width={36} height={36} className="rounded-xl" />
+              <span className="font-bold text-lg text-slate-900">Mets la gomme !</span>
             </div>
 
             <h2 className="text-2xl font-bold text-slate-900 mb-1">

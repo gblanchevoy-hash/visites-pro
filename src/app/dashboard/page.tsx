@@ -46,6 +46,15 @@ export default function DashboardPage() {
           <path d="M180 0 Q130 50 180 100" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="4 8" />
         </svg>
 
+        {/* Car illustration — white, right side, decorative */}
+        <img
+          src="/icons/mets_la_gomme_white.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute right-0 bottom-0 h-full max-h-28 w-auto opacity-20 pointer-events-none object-contain object-right-bottom"
+          style={{ mixBlendMode: 'screen' }}
+        />
+
         <div className="relative">
           <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">{formatDateLong(today)}</p>
           <h1 className="text-2xl font-bold text-white leading-tight">
