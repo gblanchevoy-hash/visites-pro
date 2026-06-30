@@ -5,7 +5,6 @@ import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { Patient } from '@/types';
-import { geocodeAdresse } from '@/lib/utils/geo';
 import { cn } from '@/lib/utils/cn';
 import toast from 'react-hot-toast';
 import { Search, Plus, Edit2, Trash2, Phone, Mail, MapPin, Filter, X } from 'lucide-react';

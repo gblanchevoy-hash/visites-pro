@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Patient } from '@/types';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
-import { geocodeAdresse } from '@/lib/utils/geo';
+import { geocodeFullAdresse } from '@/lib/utils/geo';
 import toast from 'react-hot-toast';
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete';
 import { X, MapPin, Loader2 } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function PatientModal({ patient, onClose }: Props) {
   const handleGeocode = async () => {
     if (!form.adresse || !form.ville) { toast.error('Saisissez adresse et ville'); return; }
     setGeocoding(true);
-    const result = await geocodeAdresse(form.adresse, form.code_postal, form.ville);
+    const result = await geocodeFullAdresse(`${form.adresse}, ${form.code_postal} ${form.ville}`);
     if (result) {
       setForm((f) => ({ ...f, lat: result.lat, lng: result.lng }));
       toast.success('Adresse géolocalisée !');
@@ -59,7 +59,7 @@ export default function PatientModal({ patient, onClose }: Props) {
 
     // Auto-geocode if coords missing
     if (!form.lat && form.adresse && form.ville) {
-      const r = await geocodeAdresse(form.adresse, form.code_postal, form.ville);
+      const r = await geocodeFullAdresse(`${form.adresse}, ${form.code_postal} ${form.ville}`);
       if (r) setForm((f) => ({ ...f, lat: r.lat, lng: r.lng }));
     }
 

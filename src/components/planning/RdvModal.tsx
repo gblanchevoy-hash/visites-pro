@@ -12,6 +12,7 @@ import { addMinutes } from '@/lib/utils/dates';
 interface Props {
   rdv: RendezVous | null;
   defaultDate: string;
+  defaultTime?: string;
   onClose: () => void;
 }
 
@@ -42,7 +43,7 @@ function getUserNotes(notes: string) {
   return lines.slice(1).join('\n').trim();
 }
 
-export default function RdvModal({ rdv, defaultDate, onClose }: Props) {
+export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Props) {
   const { patients, user, addRendezVous, updateRendezVous, removeRendezVous, pushHistory } = useAppStore();
 
   // Detect if this is an existing occasionnel RDV
@@ -59,14 +60,17 @@ export default function RdvModal({ rdv, defaultDate, onClose }: Props) {
   const [form, setForm] = useState({
     patient_id: rdv?.patient_id ?? '',
     date: rdv?.date ?? defaultDate,
-    heure_debut: rdv?.heure_debut ?? '09:00',
-    heure_fin: rdv?.heure_fin ?? '09:30',
+    heure_debut: rdv?.heure_debut ?? defaultTime ?? '09:00',
+    heure_fin: rdv?.heure_fin ?? (defaultTime ? addMinutes(defaultTime, 30) : '09:30'),
     duree_minutes: rdv?.duree_minutes ?? 30,
     statut: rdv?.statut ?? 'planifie',
     notes: existingUserNotes,
     couleur: rdv?.couleur ?? '',
   });
   const [occasionnel, setOccasionnel] = useState(existingOcc);
+  const [customDuree, setCustomDuree] = useState(
+    !!rdv && ![15,20,30,45,60,90,120].includes(rdv.duree_minutes)
+  );
   const [occCoords, setOccCoords] = useState<{ lat: number; lng: number } | null>(
     isExistingOccasionnel && (rdv as unknown as {lat?: number; lng?: number})?.lat
       ? { lat: (rdv as unknown as {lat: number}).lat, lng: (rdv as unknown as {lng: number}).lng }
@@ -246,9 +250,28 @@ export default function RdvModal({ rdv, defaultDate, onClose }: Props) {
             </div>
             <div>
               <label className="label">Durée</label>
-              <select className="input" value={form.duree_minutes} onChange={(e) => handleDureeChange(Number(e.target.value))}>
-                {[15, 20, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m} min</option>)}
-              </select>
+              {!customDuree ? (
+                <select className="input" value={form.duree_minutes}
+                  onChange={(e) => {
+                    if (e.target.value === 'custom') { setCustomDuree(true); return; }
+                    handleDureeChange(Number(e.target.value));
+                  }}>
+                  {[15, 20, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m} min</option>)}
+                  {![15,20,30,45,60,90,120].includes(form.duree_minutes) && (
+                    <option value={form.duree_minutes}>{form.duree_minutes} min</option>
+                  )}
+                  <option value="custom">Personnaliser…</option>
+                </select>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <input type="number" min={5} step={5} className="input"
+                    value={form.duree_minutes}
+                    onChange={(e) => handleDureeChange(Math.max(5, Number(e.target.value) || 5))}
+                    autoFocus />
+                  <button type="button" onClick={() => setCustomDuree(false)}
+                    className="btn-ghost px-2 py-2 text-xs flex-shrink-0" title="Revenir aux durées prédéfinies">↩</button>
+                </div>
+              )}
             </div>
             <div>
               <label className="label">Fin</label>

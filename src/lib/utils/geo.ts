@@ -1,111 +1,85 @@
-import { Patient, GeocodingResult } from '@/types';
+import { GeocodingResult } from '@/types';
 
-// ==================== ORS KEY HELPER ====================
-export function getOrsKey(settingsKey?: string | null): string {
-  // Priority: user's own key → shared env key → empty
-  return settingsKey?.trim() || process.env.NEXT_PUBLIC_ORS_API_KEY?.trim() || '';
+// ==================== GEOCODING — via backend /api/geocode ====================
+// No API keys here. The browser calls our own backend, which holds the keys.
+
+interface BackendGeocodeResult {
+  label: string;
+  lat: number;
+  lng: number;
+  postcode?: string;
+  city?: string;
+  street?: string;
+  housenumber?: string;
 }
 
-// ==================== GEOCODING (Nominatim / OpenStreetMap) ====================
-async function nominatimSearch(query: string): Promise<GeocodingResult | null> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=3&countrycodes=fr&addressdetails=1`;
+export async function searchAdresses(query: string, userId?: string): Promise<BackendGeocodeResult[]> {
+  if (query.trim().length < 3) return [];
   try {
-    const resp = await fetch(url, {
-      headers: { 'Accept-Language': 'fr', 'User-Agent': 'VisitesDomicile/1.0' },
-    });
-    const data = await resp.json();
-    if (data && data.length > 0) {
-      // Prefer results with highest importance
-      const best = data.sort((a: {importance: number}, b: {importance: number}) => b.importance - a.importance)[0];
-      return { lat: parseFloat(best.lat), lng: parseFloat(best.lon), display_name: best.display_name };
-    }
-  } catch (e) {
-    console.error('Geocoding error:', e);
-  }
-  return null;
-}
-
-export async function geocodeAdresse(adresse: string, codePostal: string, ville: string): Promise<GeocodingResult | null> {
-  // Try multiple query formats, from most to least specific
-  const queries = [
-    // Full address
-    `${adresse}, ${codePostal} ${ville}, France`,
-    // Without code postal
-    `${adresse}, ${ville}, France`,
-    // Structured search
-    `${adresse} ${ville} ${codePostal} France`,
-    // Just street + city
-    `${adresse}, ${ville}`,
-    // City + postcode fallback
-    `${codePostal} ${ville}, France`,
-  ].filter((q) => q.trim().length > 5);
-
-  for (const query of queries) {
-    // Small delay to respect Nominatim rate limit (1 req/sec)
-    await new Promise((r) => setTimeout(r, 300));
-    const result = await nominatimSearch(query);
-    if (result) return result;
-  }
-  return null;
-}
-
-// Geocode using French gov API (most accurate for France)
-async function geocodeGouv(adresse: string): Promise<GeocodingResult | null> {
-  try {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(adresse)}&limit=1`;
-    const res = await fetch(url);
+    const params = new URLSearchParams({ q: query });
+    if (userId) params.set('uid', userId);
+    const res = await fetch(`/api/geocode?${params.toString()}`);
+    if (!res.ok) return [];
     const data = await res.json();
-    const f = data.features?.[0];
-    if (f) return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], display_name: f.properties.label };
-  } catch { /* ignore */ }
-  return null;
-}
-
-// Geocode a free-form full address string (for depart page)
-export async function geocodeFullAdresse(fullAdresse: string): Promise<GeocodingResult | null> {
-  // 1. French gov API first (best for France)
-  const gouv = await geocodeGouv(fullAdresse);
-  if (gouv) return gouv;
-  // 2. Nominatim fallback
-  for (const query of [`${fullAdresse}, France`, fullAdresse]) {
-    await new Promise((r) => setTimeout(r, 300));
-    const result = await nominatimSearch(query);
-    if (result) return result;
+    return data.results ?? [];
+  } catch (e) {
+    console.error('Geocode search error:', e);
+    return [];
   }
-  return null;
 }
 
-// ==================== ROUTING (OpenRouteService) ====================
+// Geocode a free-form full address string — used for "depart" page single-shot geocoding
+export async function geocodeFullAdresse(fullAdresse: string, userId?: string): Promise<GeocodingResult | null> {
+  const results = await searchAdresses(fullAdresse, userId);
+  if (results.length === 0) return null;
+  const best = results[0];
+  return { lat: best.lat, lng: best.lng, display_name: best.label };
+}
+
+// ==================== ROUTING — via backend /api/route and /api/segment ====================
+// ORS API key never leaves the server. We pass optional userOrsKey (the user's
+// own key from Supabase settings) so per-user keys still work if configured.
+
 export async function calculerItineraire(
   points: Array<{ lat: number; lng: number }>,
-  apiKey: string
+  userOrsKey?: string,
+  userId?: string
 ): Promise<{ distance_km: number; duree_min: number; geometry: GeoJSON.LineString } | null> {
-  if (!apiKey || points.length < 2) return null;
-  const coordinates = points.map((p) => [p.lng, p.lat]);
+  if (points.length < 2) return null;
   try {
-    const resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+    const resp = await fetch('/api/route', {
       method: 'POST',
-      headers: {
-        'Authorization': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ coordinates }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points, orsKey: userOrsKey, userId }),
     });
-    if (!resp.ok) throw new Error(`ORS error: ${resp.status}`);
+    if (!resp.ok) return null;
     const data = await resp.json();
-    const summary = data.features[0].properties.summary;
-    return {
-      distance_km: Math.round(summary.distance / 100) / 10,
-      duree_min: Math.round(summary.duration / 60),
-      geometry: data.features[0].geometry,
-    };
+    return { distance_km: data.distance_km, duree_min: data.duree_min, geometry: data.geometry };
   } catch (e) {
     console.error('Routing error:', e);
     return null;
   }
 }
 
-// ==================== DISTANCE à vol d'oiseau (fallback) ====================
+export async function calculerSegment(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+  userOrsKey?: string,
+  userId?: string
+): Promise<{ distance_km: number; duree_min: number } | null> {
+  try {
+    const resp = await fetch('/api/segment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, orsKey: userOrsKey, userId }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return { distance_km: data.distance_km, duree_min: data.duree_min };
+  } catch { return null; }
+}
+
+// ==================== DISTANCE à vol d'oiseau (fallback instantané, pas d'appel réseau) ====================
 export function distanceHaversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -157,27 +131,4 @@ export function formatDistance(km: number): string {
 
 export function calculateFraisKm(km: number, bareme: number): number {
   return Math.round(km * bareme * 100) / 100;
-}
-
-// ==================== SEGMENT ORS (entre 2 points) ====================
-export async function calculerSegment(
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
-  apiKey: string
-): Promise<{ distance_km: number; duree_min: number } | null> {
-  if (!apiKey) return null;
-  try {
-    const resp = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-      method: 'POST',
-      headers: { 'Authorization': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ coordinates: [[from.lng, from.lat], [to.lng, to.lat]] }),
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const summary = data.features[0].properties.summary;
-    return {
-      distance_km: Math.round(summary.distance / 100) / 10,
-      duree_min: Math.round(summary.duration / 60),
-    };
-  } catch { return null; }
 }

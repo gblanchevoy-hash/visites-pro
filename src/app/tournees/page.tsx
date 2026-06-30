@@ -7,7 +7,7 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { RendezVous } from '@/types';
 import { toISODate, formatDate, getWeekDays, addDays } from '@/lib/utils/dates';
-import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine, getOrsKey } from '@/lib/utils/geo';
+import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine } from '@/lib/utils/geo';
 import { exportTourneePDF, exportTourneeExcel } from '@/lib/utils/exports';
 import toast from 'react-hot-toast';
 import { MapPin, Zap, Navigation, FileText, Download, ChevronLeft, ChevronRight, Home, Flag, Car, Clock, ChevronDown, ChevronUp } from 'lucide-react';
@@ -52,9 +52,20 @@ export default function TourneesPage() {
   const [showStats, setShowStats] = useState(true);
   const [activeSegments, setActiveSegments] = useState<boolean[]>([]);
 
-  const orderedRdvs = allRdvs
-    .filter(r => r.date === toISODate(selectedDay))
-    .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+  const [manualOrder, setManualOrder] = useState<string[] | null>(null); // RDV ids in custom order, set by "Optimiser"
+
+  const orderedRdvs = (() => {
+    const dayRdvs = allRdvs.filter(r => r.date === toISODate(selectedDay));
+    if (manualOrder) {
+      const byId = new Map(dayRdvs.map(r => [r.id, r]));
+      const ordered = manualOrder.map(id => byId.get(id)).filter(Boolean) as RendezVous[];
+      // Include any RDV not in manualOrder (e.g. newly added) at the end, sorted by time
+      const remaining = dayRdvs.filter(r => !manualOrder.includes(r.id))
+        .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+      return [...ordered, ...remaining];
+    }
+    return dayRdvs.sort((a, b) => a.heure_debut.localeCompare(b.heure_debut));
+  })();
 
   const loadWeek = async () => {
     if (!user) return;
@@ -66,18 +77,16 @@ export default function TourneesPage() {
       .gte('date', start).lte('date', end)
       .neq('statut', 'annule').order('date').order('heure_debut');
     setAllRdvs((data as unknown as RendezVous[]) ?? []);
-    setSegments([]); setRouteGeo(null); setActiveSegments([]);
+    setSegments([]); setRouteGeo(null); setActiveSegments([]); setManualOrder(null);
   };
 
   useEffect(() => { loadWeek(); }, [weekStart, user]);
-  useEffect(() => { setSegments([]); setRouteGeo(null); setActiveSegments([]); }, [selectedDay]);
+  useEffect(() => { setSegments([]); setRouteGeo(null); setActiveSegments([]); setManualOrder(null); }, [selectedDay]);
 
   const hasDepart = !!settings?.adresse_depart_lat;
   const depart = hasDepart ? { lat: settings!.adresse_depart_lat!, lng: settings!.adresse_depart_lng! } : null;
 
   const calculer = async () => {
-    const orsKey = getOrsKey(settings?.ors_api_key ?? null);
-    if (!orsKey) { toast.error('Aucune clé ORS disponible — configurez-la dans Paramètres'); return; }
     const withCoords = orderedRdvs.filter(r => getRdvCoords(r));
     if (withCoords.length < 1) { toast.error('Aucune visite géolocalisée'); return; }
     setComputing(true);
@@ -88,14 +97,14 @@ export default function TourneesPage() {
     const segs: (Segment | null)[] = [];
     for (let i = 0; i < sequence.length - 1; i++) {
       await new Promise(r => setTimeout(r, 250));
-      const res = await calculerSegment(sequence[i], sequence[i+1], orsKey);
+      const res = await calculerSegment(sequence[i], sequence[i+1], settings?.ors_api_key ?? undefined, user?.id);
       segs.push(res ? { km: res.distance_km, min: res.duree_min } : null);
     }
     setSegments(segs);
     setActiveSegments(Array(segs.length).fill(true));
     const pts = sequence.map(s => ({ lat: s.lat, lng: s.lng }));
     if (pts.length >= 2) {
-      const result = await calculerItineraire(pts, orsKey);
+      const result = await calculerItineraire(pts, settings?.ors_api_key ?? undefined, user?.id);
       if (result) setRouteGeo(result.geometry);
     }
     setComputing(false);
@@ -104,16 +113,14 @@ export default function TourneesPage() {
 
   const optimiser = () => {
     if (!depart) { toast.error('Configurez votre adresse de départ'); return; }
+    const withCoords = orderedRdvs.filter(r => getRdvCoords(r));
+    if (withCoords.length < 2) { toast('Au moins 2 visites géolocalisées sont nécessaires', { icon: 'ℹ️' }); return; }
     setOptimizing(true);
-    const withCoords = orderedRdvs.map(r => ({ ...r, lat: getRdvCoords(r)?.lat ?? undefined, lng: getRdvCoords(r)?.lng ?? undefined }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setAllRdvs(prev => {
-      const optimised = optimiserTournee(withCoords, depart) as unknown as RendezVous[];
-      const otherDays = prev.filter(r => r.date !== toISODate(selectedDay));
-      return [...otherDays, ...optimised];
-    });
-    setSegments([]); setOptimizing(false);
-    toast.success('Tournée optimisée !');
+    const enriched = orderedRdvs.map(r => ({ ...r, lat: getRdvCoords(r)?.lat ?? undefined, lng: getRdvCoords(r)?.lng ?? undefined }));
+    const optimised = optimiserTournee(enriched, depart) as unknown as RendezVous[];
+    setManualOrder(optimised.map(r => r.id));
+    setSegments([]); setActiveSegments([]); setOptimizing(false);
+    toast.success('Tournée optimisée ! Cliquez "Calculer l\'itinéraire" pour voir les nouveaux trajets.');
   };
 
   const totalKm  = segments.reduce((s, seg) => s + (seg?.km ?? 0), 0);

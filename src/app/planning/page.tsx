@@ -9,8 +9,8 @@ import {
   formatDate, formatDateLong, getWeekDays, getMonthDays,
   toISODate, isSameDay, addDays,
 } from '@/lib/utils/dates';
-import { calculerSegment, distanceHaversine, formatDuree, getOrsKey } from '@/lib/utils/geo';
-import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo';
+import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft, FileText } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';
 import NoteTooltip from '@/components/ui/NoteTooltip';
@@ -77,6 +77,7 @@ export default function PlanningPage() {
   const [showModal, setShowModal]     = useState(false);
   const [editRdv, setEditRdv]         = useState<RendezVous | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [draggingId, setDraggingId]   = useState<string | null>(null);
   const [travelCache, setTravelCache] = useState<Record<string, { km: number; min: number } | null>>({});
   const [showStats, setShowStats]     = useState(true);
@@ -101,7 +102,12 @@ export default function PlanningPage() {
               .sort((a, b) => a.heure_debut.localeCompare(b.heure_debut)),
   [rendezVous]);
 
-  const openNew  = (date?: string) => { setEditRdv(null); setSelectedDate(date || toISODate(currentDate)); setShowModal(true); };
+  const openNew  = (date?: string, time?: string) => {
+    setEditRdv(null);
+    setSelectedDate(date || toISODate(currentDate));
+    setSelectedTime(time ?? null);
+    setShowModal(true);
+  };
   const openEdit = useCallback((rdv: RendezVous) => { setEditRdv(rdv); setShowModal(true); }, []);
 
   // ── Travel segments ──
@@ -126,8 +132,7 @@ export default function PlanningPage() {
   }, [settings, travelCache]);
 
   const fetchTravelTimes = useCallback(async (rdvs: RendezVous[]) => {
-    const orsKey = getOrsKey(settings?.ors_api_key ?? null);
-    if (!orsKey || computingRef.current || rdvs.length === 0) return;
+    if (computingRef.current || rdvs.length === 0) return;
     const dep = settings?.adresse_depart_lat ? { lat: settings.adresse_depart_lat, lng: settings.adresse_depart_lng!, id: 'dep' } : null;
     const seq: Array<{ lat: number; lng: number; id: string }> = [];
     if (dep) seq.push(dep);
@@ -139,7 +144,7 @@ export default function PlanningPage() {
       const k = segKey(seq[i].id, seq[i+1].id);
       if (travelCache[k] !== undefined) continue;
       await new Promise(r => setTimeout(r, 350));
-      const res = await calculerSegment(seq[i], seq[i+1], orsKey);
+      const res = await calculerSegment(seq[i], seq[i+1], settings?.ors_api_key ?? undefined, user?.id);
       updates[k] = res ? { km: res.distance_km, min: res.duree_min } : null;
     }
     if (Object.keys(updates).length) setTravelCache(p => ({ ...p, ...updates }));
@@ -272,10 +277,44 @@ export default function PlanningPage() {
 
     // Extract user notes — strip the [Occasionnel] header line if present
     const rawNotes = rdv.notes ?? '';
-    const tooltipText = rawNotes.startsWith('[Occasionnel]')
-      ? rawNotes.split('\n').slice(1).join('\n').trim()
-      : rawNotes.trim();
-    const hasNotes = tooltipText.length > 0;
+    const isOcc = rawNotes.startsWith('[Occasionnel]');
+    const userNotes = isOcc ? rawNotes.split('\n').slice(1).join('\n').trim() : rawNotes.trim();
+
+    // Parse occasionnel header for address/phone: "[Occasionnel] Nom · Adresse · Tel"
+    const occParts = isOcc ? rawNotes.split('\n')[0].replace('[Occasionnel] ', '').split(' · ') : [];
+    const occAdresse = isOcc ? (occParts[1] ?? '') : '';
+    const occTelephone = isOcc ? (occParts[2] ?? '') : '';
+
+    const adresse   = rdv.patient?.adresse || occAdresse || '';
+    const ville     = rdv.patient?.ville || '';
+    const telephone = rdv.patient?.telephone || occTelephone || '';
+
+    const hasInfo = !!(adresse || telephone || userNotes);
+
+    const tooltipContent = (
+      <div className="space-y-1.5">
+        <p className="font-semibold text-[12px]" style={{ color: '#92400e' }}>{getRdvLabel(rdv)}</p>
+        <p className="text-[11px] opacity-80">{fmtH(rdv.heure_debut)} – {fmtH(rdv.heure_fin)}</p>
+        {adresse && (
+          <div className="flex items-start gap-1.5 pt-1 border-t border-amber-200/60">
+            <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
+            <span className="text-[11px]">{adresse}{ville ? `, ${ville}` : ''}</span>
+          </div>
+        )}
+        {telephone && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] opacity-60">📞</span>
+            <span className="text-[11px]">{telephone}</span>
+          </div>
+        )}
+        {userNotes && (
+          <div className="flex items-start gap-1.5 pt-1 border-t border-amber-200/60">
+            <FileText className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
+            <span className="text-[11px] whitespace-pre-wrap">{userNotes}</span>
+          </div>
+        )}
+      </div>
+    );
 
     const card = (
       <div
@@ -310,13 +349,13 @@ export default function PlanningPage() {
             {rdv.patient.adresse}
           </p>
         )}
-        {/* Notes indicator dot */}
-        {hasNotes && (
+        {/* Info indicator dot */}
+        {hasInfo && (
           <div className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white" style={{ background: hColor, opacity: 0.7 }} />
         )}
       </div>
     );
-    return hasNotes ? <NoteTooltip text={tooltipText}>{card}</NoteTooltip> : card;
+    return hasInfo ? <NoteTooltip content={tooltipContent}>{card}</NoteTooltip> : card;
   };
 
   // ── Day View ──
@@ -332,7 +371,7 @@ export default function PlanningPage() {
                 <span className="text-[12px] text-slate-400 font-medium">{h}h00</span>
               </div>
               <div className="flex-1 border-t border-slate-200/70 border-dashed cursor-pointer hover:bg-blue-50/30 transition-colors"
-                onClick={() => { if (!draggingId) openNew(toISODate(currentDate)); }} />
+                onClick={() => { if (!draggingId) openNew(toISODate(currentDate), `${String(h).padStart(2,'0')}:00`); }} />
             </div>
           ))}
           {dayRdvs.map((rdv, idx) => {
@@ -391,7 +430,7 @@ export default function PlanningPage() {
               {days.map(d => (
                 <div key={d.toISOString()}
                   className={cn('flex-1 border-t border-l border-slate-200/70 border-dashed cursor-pointer hover:bg-blue-50/20 transition-colors', isSameDay(d, new Date()) && 'bg-blue-50/20')}
-                  onClick={() => { if (!draggingId) openNew(toISODate(d)); }} />
+                  onClick={() => { if (!draggingId) openNew(toISODate(d), `${String(h).padStart(2,'0')}:00`); }} />
               ))}
             </div>
           ))}
@@ -552,8 +591,8 @@ export default function PlanningPage() {
       )}
 
       {showModal && (
-        <RdvModal rdv={editRdv} defaultDate={selectedDate}
-          onClose={() => { setShowModal(false); setEditRdv(null); }} />
+        <RdvModal rdv={editRdv} defaultDate={selectedDate} defaultTime={selectedTime ?? undefined}
+          onClose={() => { setShowModal(false); setEditRdv(null); setSelectedTime(null); }} />
       )}
     </AppShell>
   );

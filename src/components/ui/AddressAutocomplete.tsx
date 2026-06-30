@@ -1,18 +1,8 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
-
-interface Suggestion {
-  label: string;
-  x: number; // lng
-  y: number; // lat
-  postcode?: string;
-  city?: string;
-  street?: string;
-  housenumber?: string;
-  context?: string;
-  type?: string;
-}
+import { searchAdresses } from '@/lib/utils/geo';
+import { useAppStore } from '@/lib/stores/appStore';
 
 interface SelectResult {
   adresse: string;
@@ -30,92 +20,60 @@ interface Props {
   className?: string;
 }
 
-// French government address API — very precise for France
-async function searchGouv(q: string): Promise<Suggestion[]> {
-  try {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=6&autocomplete=1`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return (data.features ?? []).map((f: {
-      properties: { label: string; postcode?: string; city?: string; street?: string; housenumber?: string; context?: string; type?: string };
-      geometry: { coordinates: [number, number] };
-    }) => ({
-      label: f.properties.label,
-      x: f.geometry.coordinates[0],
-      y: f.geometry.coordinates[1],
-      postcode: f.properties.postcode,
-      city: f.properties.city,
-      street: f.properties.street,
-      housenumber: f.properties.housenumber,
-      context: f.properties.context,
-      type: f.properties.type,
-    }));
-  } catch { return []; }
-}
-
-// Nominatim fallback for non-French or complex queries
-async function searchNominatim(q: string): Promise<Suggestion[]> {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', France')}&limit=4&countrycodes=fr&addressdetails=1&accept-language=fr`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'VisitesDomicile/1.0' } });
-    const data = await res.json();
-    return data.map((f: {
-      display_name: string;
-      lon: string;
-      lat: string;
-      address: { postcode?: string; city?: string; town?: string; village?: string; road?: string; house_number?: string };
-    }) => {
-      const a = f.address;
-      const ville = a.city ?? a.town ?? a.village ?? '';
-      const rue = [a.house_number, a.road].filter(Boolean).join(' ');
-      return {
-        label: f.display_name.split(',').slice(0, 3).join(',').trim(),
-        x: parseFloat(f.lon),
-        y: parseFloat(f.lat),
-        postcode: a.postcode,
-        city: ville,
-        street: rue,
-      };
-    });
-  } catch { return []; }
-}
+// Small client-side cache so re-typing the same query doesn't re-hit the backend
+const sessionCache = new Map<string, Awaited<ReturnType<typeof searchAdresses>>>();
 
 export default function AddressAutocomplete({ value, onChange, onSelect, placeholder, className }: Props) {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const { user } = useAppStore();
+  const [suggestions, setSuggestions] = useState<Awaited<ReturnType<typeof searchAdresses>>>([]);
   const [loading, setLoading]         = useState(false);
   const [open, setOpen]               = useState(false);
   const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const abortRef     = useRef<AbortController | null>(null);
+  const reqIdRef      = useRef(0); // guards against out-of-order responses
 
   const search = useCallback(async (q: string) => {
-    if (q.length < 3) { setSuggestions([]); setOpen(false); return; }
-    setLoading(true);
-    // Try French gov API first (best for France)
-    let results = await searchGouv(q);
-    // Fallback to Nominatim if not enough results
-    if (results.length < 2) {
-      const nom = await searchNominatim(q);
-      results = [...results, ...nom].slice(0, 6);
+    if (q.trim().length < 3) { setSuggestions([]); setOpen(false); return; }
+
+    const cacheKey = q.trim().toLowerCase();
+    const cached = sessionCache.get(cacheKey);
+    if (cached) {
+      setSuggestions(cached);
+      setOpen(cached.length > 0);
+      return;
     }
+
+    const thisReqId = ++reqIdRef.current;
+    setLoading(true);
+    const results = await searchAdresses(q, user?.id);
+    // Ignore stale responses (a newer request was fired in the meantime)
+    if (thisReqId !== reqIdRef.current) return;
+
+    sessionCache.set(cacheKey, results);
+    if (sessionCache.size > 200) {
+      const firstKey = sessionCache.keys().next().value;
+      if (firstKey) sessionCache.delete(firstKey);
+    }
+
     setSuggestions(results);
     setOpen(results.length > 0);
     setLoading(false);
-  }, []);
+  }, [user?.id]);
 
   const handleChange = (v: string) => {
     onChange(v);
     if (timerRef.current) clearTimeout(timerRef.current);
+    // 300ms debounce as specified
     timerRef.current = setTimeout(() => search(v), 300);
   };
 
-  const handleSelect = (s: Suggestion) => {
+  const handleSelect = (s: Awaited<ReturnType<typeof searchAdresses>>[number]) => {
     const adresse = [s.housenumber, s.street].filter(Boolean).join(' ') || s.label.split(',')[0].trim();
-    const cp    = s.postcode ?? '';
+    const cp = s.postcode ?? '';
     const ville = s.city ?? '';
     onChange(s.label);
     setSuggestions([]); setOpen(false);
-    onSelect?.({ adresse, codePostal: cp, ville, lat: s.y, lng: s.x });
+    onSelect?.({ adresse, codePostal: cp, ville, lat: s.lat, lng: s.lng });
   };
 
   useEffect(() => {
@@ -156,7 +114,7 @@ export default function AddressAutocomplete({ value, onChange, onSelect, placeho
                   {[s.housenumber, s.street].filter(Boolean).join(' ') || s.label.split(',')[0]}
                 </p>
                 <p className="text-xs text-slate-500 truncate">
-                  {[s.postcode, s.city, s.context?.split(',')[0]].filter(Boolean).join(' · ')}
+                  {[s.postcode, s.city].filter(Boolean).join(' · ')}
                 </p>
               </div>
             </li>

@@ -4,7 +4,7 @@ import AppShell from '@/components/layout/AppShell';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
-import { formatDuree } from '@/lib/utils/geo';
+import { formatDuree, distanceHaversine } from '@/lib/utils/geo';
 import { exportStatsPDF, exportStatsExcel } from '@/lib/utils/exports';
 import { BarChart3, TrendingUp, Car, Clock, Users, Download } from 'lucide-react';
 import { StatsMensuelles } from '@/types';
@@ -22,36 +22,61 @@ export default function StatistiquesPage() {
       if (!user) return;
       setLoading(true);
 
-      // Load rendez-vous for the year
+      // Load rendez-vous for the year (with patient coords for km estimation)
       const { data: rdvs } = await supabase
         .from('rendez_vous')
-        .select('date, duree_minutes, statut')
+        .select('date, duree_minutes, statut, lat, lng, patient:patients(lat, lng)')
         .eq('user_id', user.id)
         .gte('date', `${selectedYear}-01-01`)
         .lte('date', `${selectedYear}-12-31`)
         .neq('statut', 'annule');
 
-      // Load frais
+      // Load frais (manual entries take priority when present)
       const { data: frais } = await supabase
         .from('frais_kilometriques')
         .select('mois, km_parcourus, montant_total')
         .eq('user_id', user.id)
         .eq('annee', selectedYear);
 
+      const dep = settings?.adresse_depart_lat
+        ? { lat: settings.adresse_depart_lat, lng: settings.adresse_depart_lng! }
+        : null;
+
+      type RdvRow = { date: string; duree_minutes: number; lat: number | null; lng: number | null; patient: { lat: number | null; lng: number | null } | null };
+
       // Aggregate by month
       const monthStats: StatsMensuelles[] = MOIS_COURTS.map((mois, idx) => {
         const monthNum = idx + 1;
         const monthStr = monthNum.toString().padStart(2, '0');
-        const monthRdvs = (rdvs ?? []).filter((r) => r.date.startsWith(`${selectedYear}-${monthStr}`));
+        const monthRdvs = ((rdvs ?? []) as unknown as RdvRow[]).filter((r) => r.date.startsWith(`${selectedYear}-${monthStr}`));
         const monthFrais = (frais ?? []).find((f) => f.mois === monthNum);
+
+        // If a manual/auto frais entry exists for this month, use it.
+        // Otherwise, estimate km directly from the tours (haversine between consecutive visits).
+        let kmTotal = monthFrais?.km_parcourus ?? 0;
+        if (!monthFrais) {
+          const byDay: Record<string, RdvRow[]> = {};
+          monthRdvs.forEach(r => { byDay[r.date] = byDay[r.date] ?? []; byDay[r.date].push(r); });
+          Object.values(byDay).forEach(dayRdvs => {
+            const coords = dayRdvs
+              .map(r => (r.patient?.lat && r.patient?.lng) ? { lat: r.patient.lat, lng: r.patient.lng }
+                : (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : null)
+              .filter(Boolean) as { lat: number; lng: number }[];
+            if (coords.length === 0) return;
+            if (dep) kmTotal += distanceHaversine(dep.lat, dep.lng, coords[0].lat, coords[0].lng);
+            for (let i = 0; i < coords.length - 1; i++)
+              kmTotal += distanceHaversine(coords[i].lat, coords[i].lng, coords[i+1].lat, coords[i+1].lng);
+            if (dep) kmTotal += distanceHaversine(coords[coords.length-1].lat, coords[coords.length-1].lng, dep.lat, dep.lng);
+          });
+        }
 
         return {
           mois,
           nb_visites: monthRdvs.length,
-          km_total: monthFrais?.km_parcourus ?? 0,
-          duree_trajet_min: 0, // Would come from tournee data
+          km_total: kmTotal,
+          duree_trajet_min: 0,
           duree_soin_min: monthRdvs.reduce((a, r) => a + r.duree_minutes, 0),
-          frais_total: monthFrais?.montant_total ?? 0,
+          frais_total: monthFrais?.montant_total ?? (kmTotal * (settings?.bareme_km ?? 0.62)),
         };
       });
 
@@ -60,7 +85,7 @@ export default function StatistiquesPage() {
     };
 
     loadStats();
-  }, [user, selectedYear]);
+  }, [user, selectedYear, settings]);
 
   const totals = stats.reduce((acc, s) => ({
     visites: acc.visites + s.nb_visites,
