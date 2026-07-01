@@ -46,13 +46,13 @@ export default function DashboardPage() {
           <path d="M180 0 Q130 50 180 100" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="4 8" />
         </svg>
 
-        {/* Car illustration — white, right side */}
+        {/* Car illustration — truly white, larger */}
         <img
           src="/icons/mets_la_gomme_white.png"
           alt=""
           aria-hidden="true"
-          className="absolute right-2 bottom-0 pointer-events-none"
-          style={{ height: '110%', maxHeight: '160px', width: 'auto', opacity: 0.55, filter: 'brightness(10)' }}
+          className="absolute right-0 bottom-0 pointer-events-none"
+          style={{ height: '130%', maxHeight: '200px', width: 'auto', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
         />
 
         <div className="relative">
