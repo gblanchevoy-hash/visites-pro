@@ -50,10 +50,10 @@ export default function Sidebar() {
             <div className="flex items-center gap-3">
               {/* Road icon */}
               <div className="w-10 h-10 flex-shrink-0">
-                <img src="/icons/logo.png" alt="Mets la gomme !" className="w-10 h-10 rounded-xl object-contain" />
+                <img src="/icons/logo.png" alt="Roulax" className="w-10 h-10 rounded-xl object-contain" />
               </div>
               <div>
-                <span className="font-bold text-white text-sm tracking-tight">Mets la gomme !</span>
+                <span className="font-bold text-white text-sm tracking-tight">Roulax</span>
                 <p className="text-[10px] text-slate-500 -mt-0.5">Gestion de tournées</p>
               </div>
             </div>

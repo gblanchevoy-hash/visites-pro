@@ -80,9 +80,9 @@ function AuthInner() {
         {/* Title row — stylized name + small logo to its right */}
         <div className="flex items-center gap-5 relative">
           <h1 className="text-5xl font-black leading-none tracking-tight">
-            Mets la <span className="text-primary-400">gomme !</span>
+            <span className="text-primary-400">Roulax</span>
           </h1>
-          <Image src="/icons/logo.png" alt="Mets la gomme !" width={52} height={52}
+          <Image src="/icons/logo.png" alt="Roulax" width={52} height={52}
             className="rounded-2xl bg-white/10 p-1 shadow-lg flex-shrink-0" />
         </div>
 
@@ -115,7 +115,7 @@ function AuthInner() {
             style={{ width: '55%', filter: 'brightness(100)', opacity: 0.95 }} />
         </div>
 
-        <p className="text-slate-600 text-sm relative">© 2026 Mets la gomme ! Tous droits réservés.</p>
+        <p className="text-slate-600 text-sm relative">© 2026 Roulax Tous droits réservés.</p>
       </div>
 
       {/* Right form */}
@@ -124,8 +124,8 @@ function AuthInner() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* Mobile header */}
             <div className="flex items-center gap-3 mb-8 lg:hidden">
-              <Image src="/icons/logo.png" alt="Mets la gomme !" width={36} height={36} className="rounded-xl" />
-              <span className="font-black text-xl text-slate-900 tracking-tight">Mets la gomme !</span>
+              <Image src="/icons/logo.png" alt="Roulax" width={36} height={36} className="rounded-xl" />
+              <span className="font-black text-xl text-slate-900 tracking-tight">Roulax</span>
             </div>
 
             <h2 className="text-2xl font-bold text-slate-900 mb-1">
