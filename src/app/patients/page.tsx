@@ -113,8 +113,10 @@ export default function PatientsPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                        style={{ backgroundColor: patient.couleur || '#6366f1' }}>
-                        {patient.prenom[0]}{patient.nom[0]}
+                        style={{ backgroundColor: patient.photo_url ? 'transparent' : (patient.couleur || '#6366f1') }}>
+                        {patient.photo_url
+                          ? <img src={patient.photo_url} alt={patient.prenom} className="w-full h-full object-cover rounded-full" />
+                          : <>{patient.prenom[0]}{patient.nom[0]}</>}
                       </div>
                       <div>
                         <p className="font-semibold text-slate-900 text-sm">{patient.prenom} {patient.nom}</p>

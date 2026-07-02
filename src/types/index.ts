@@ -16,6 +16,7 @@ export interface Patient {
   lat?: number;
   lng?: number;
   actif: boolean;
+  photo_url?: string | null;
   created_at: string;
   updated_at: string;
 }

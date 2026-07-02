@@ -35,6 +35,7 @@ export default function PatientModal({ patient, onClose }: Props) {
     lat: patient?.lat ?? undefined as number | undefined,
     lng: patient?.lng ?? undefined as number | undefined,
     actif: true,
+    photo_url: patient?.photo_url ?? '',
   });
 
   const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
@@ -99,6 +100,22 @@ pushHistory({ type: 'ADD_PATIENT', patient: newP });
           {/* Nom / Prénom */}
           <div className="grid grid-cols-2 gap-3">
             <div>
+              {/* Photo */}
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {form.photo_url ? (
+                    <img src={form.photo_url} alt="Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl text-slate-300">👤</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label className="label">Photo (URL ou upload)</label>
+                  <input className="input text-sm" placeholder="https://... ou laisser vide"
+                    value={form.photo_url} onChange={e => set('photo_url', e.target.value)} />
+                  <p className="text-[11px] text-slate-400 mt-1">Collez l'URL d'une photo ou laissez vide</p>
+                </div>
+              </div>
               <label className="label">Prénom *</label>
               <input className="input" required value={form.prenom} onChange={(e) => set('prenom', e.target.value)} />
             </div>

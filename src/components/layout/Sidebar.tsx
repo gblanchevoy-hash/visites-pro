@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Users, Calendar, MapPin, Calculator,
   BarChart3, Download, Settings, LogOut, X, Wifi, WifiOff,
-  Navigation, Shield
+  Navigation, Shield, Wrench, MessageCircle
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +20,8 @@ const navItems = [
   { href: '/frais', icon: Calculator, label: 'Frais km', color: 'text-amber-400' },
   { href: '/statistiques', icon: BarChart3, label: 'Statistiques', color: 'text-pink-400' },
   { href: '/exports', icon: Download, label: 'Exports', color: 'text-teal-400' },
+  { href: '/messagerie', icon: MessageCircle, label: 'Messagerie', color: 'text-pink-400' },
+  { href: '/outils', icon: Wrench, label: 'Outils', color: 'text-orange-400' },
 ];
 
 export default function Sidebar() {
@@ -50,10 +52,10 @@ export default function Sidebar() {
             <div className="flex items-center gap-3">
               {/* Road icon */}
               <div className="w-10 h-10 flex-shrink-0">
-                <img src="/icons/logo.png" alt="Roulax" className="w-10 h-10 rounded-xl object-contain" />
+                <img src="/icons/logo.png" alt="Itilib" className="w-10 h-10 rounded-xl object-contain" />
               </div>
               <div>
-                <span className="font-bold text-white text-sm tracking-tight">Roulax</span>
+                <span className="font-bold text-white text-sm tracking-tight">Itilib</span>
                 <p className="text-[10px] text-slate-500 -mt-0.5">Gestion de tournées</p>
               </div>
             </div>

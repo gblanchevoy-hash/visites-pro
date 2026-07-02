@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
 import Topbar from '@/components/layout/Topbar';
@@ -14,7 +15,6 @@ import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo
 import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft, FileText, Users, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';
-import NoteTooltip from '@/components/ui/NoteTooltip';
 import toast from 'react-hot-toast';
 
 type ViewMode = 'jour' | 'semaine' | 'mois';
@@ -338,55 +338,77 @@ export default function PlanningPage() {
       </div>
     );
 
-    const card = (
-      <div
-        onPointerDown={onPointerDown}
-        onMouseEnter={hasInfo ? (e) => {
-          if (e.buttons !== 0) return;
-          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          const sidebarWidth = 260;
-          const x = Math.max(sidebarWidth + 8, rect.left);
-          // Store tooltip info in a custom event to avoid state in RdvCard
-          (e.currentTarget as HTMLElement).dataset.tooltip = JSON.stringify({ x: Math.min(x, window.innerWidth - 280), y: rect.bottom + 10 });
-        } : undefined}
-        className={cn('absolute select-none z-20 transition-all duration-100 group',
-          isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:scale-[1.01] hover:shadow-md')}
-        style={{
-          ...style,
-          background: bg,
-          border: `1.5px solid ${border}`,
-          borderRadius: '14px',
-          boxShadow: isDrag ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
-          padding: '8px 10px',
-          overflow: 'hidden',
-          touchAction: 'manipulation',
-        }}>
-        {/* Header row: time + dot */}
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[12px] font-bold leading-tight" style={{ color: hColor }}>
-            {fmtH(rdv.heure_debut)} – {fmtH(rdv.heure_fin)}
-          </span>
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+    const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleMouseEnter = (e: React.MouseEvent) => {
+      if (!hasInfo || e.buttons !== 0) return;
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
+      tooltipTimer.current = setTimeout(() => {
+        const x = Math.min(Math.max(260 + 8, rect.left), window.innerWidth - 280);
+        setTooltipPos({ x, y: rect.bottom + 10 });
+        setTooltipVisible(true);
+      }, 200);
+    };
+
+    const handleMouseLeave = () => {
+      if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
+      setTooltipVisible(false);
+      setTooltipPos(null);
+    };
+
+    return (
+      <>
+        <div
+          onPointerDown={onPointerDown}
+          onMouseEnter={hasInfo ? handleMouseEnter : undefined}
+          onMouseLeave={hasInfo ? handleMouseLeave : undefined}
+          className={cn('absolute select-none z-20 transition-all duration-100',
+            isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:scale-[1.01] hover:shadow-md')}
+          style={{
+            ...style,
+            background: bg,
+            border: `1.5px solid ${border}`,
+            borderRadius: '14px',
+            boxShadow: isDrag ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
+            padding: '8px 10px',
+            overflow: 'hidden',
+            touchAction: 'manipulation',
+          }}>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[12px] font-bold leading-tight" style={{ color: hColor }}>
+              {fmtH(rdv.heure_debut)} – {fmtH(rdv.heure_fin)}
+            </span>
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+          </div>
+          {height > 38 && (
+            <p className="text-[12px] font-semibold text-slate-800 mt-1 leading-tight truncate">
+              {getRdvLabel(rdv)}
+            </p>
+          )}
+          {height > 60 && rdv.patient?.adresse && (
+            <p className="text-[11px] text-slate-400 mt-0.5 truncate leading-tight">
+              {rdv.patient.adresse}
+            </p>
+          )}
+          {hasInfo && (
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white" style={{ background: hColor, opacity: 0.7 }} />
+          )}
         </div>
-        {/* Name */}
-        {height > 38 && (
-          <p className="text-[12px] font-semibold text-slate-800 mt-1 leading-tight truncate">
-            {getRdvLabel(rdv)}
-          </p>
+        {/* Tooltip rendered via portal — completely outside the calendar grid */}
+        {tooltipVisible && tooltipPos && typeof window !== 'undefined' && createPortal(
+          <div style={{ position: 'fixed', left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px`, zIndex: 99999, pointerEvents: 'none', maxWidth: '260px' }}>
+            <div style={{ background: '#fffbeb', color: '#1e293b', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.18)', border: '1.5px solid #fde68a' }}>
+              {tooltipContent}
+            </div>
+            <div style={{ position: 'absolute', top: '-5px', left: '16px', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid #fde68a' }} />
+          </div>,
+          document.body
         )}
-        {/* Address */}
-        {height > 60 && rdv.patient?.adresse && (
-          <p className="text-[11px] text-slate-400 mt-0.5 truncate leading-tight">
-            {rdv.patient.adresse}
-          </p>
-        )}
-        {/* Info indicator dot */}
-        {hasInfo && (
-          <div className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white" style={{ background: hColor, opacity: 0.7 }} />
-        )}
-      </div>
+      </>
     );
-    return hasInfo ? <NoteTooltip content={tooltipContent} style={style}>{card}</NoteTooltip> : card;
   };
 
   // ── Day View ──

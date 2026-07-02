@@ -1,6 +1,6 @@
 {
-  "name": "Roulax — Gestion de tournées",
-  "short_name": "Roulax",
+  "name": "Itilib — Gestion de tournées",
+  "short_name": "Itilib",
   "description": "Organisation professionnelle de visites à domicile",
   "start_url": "/dashboard",
   "display": "standalone",

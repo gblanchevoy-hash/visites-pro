@@ -3,10 +3,10 @@ import '@/styles/globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'Roulax — Gestion de tournées à domicile',
+  title: 'Itilib — Gestion de tournées à domicile',
   description: 'Application professionnelle pour organiser vos visites à domicile, optimiser vos tournées et calculer vos frais kilométriques.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Roulax' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Itilib' },
   formatDetection: { telephone: false },
   icons: {
     icon: '/icons/icon-192x192.png',

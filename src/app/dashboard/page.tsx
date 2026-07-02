@@ -11,6 +11,7 @@ import { MapPin, Users, Navigation, Clock, ChevronRight, Calendar, TrendingUp, S
 export default function DashboardPage() {
   const { user, patients, settings } = useAppStore();
   const [todayRdvs, setTodayRdvs] = useState<RendezVous[]>([]);
+  const [weather, setWeather] = useState<{ temp: number; desc: string; icon: string; city: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const today = new Date();
 
@@ -29,6 +30,38 @@ export default function DashboardPage() {
     };
     loadToday();
   }, [user]);
+
+  // Fetch weather using Open-Meteo (free, no API key)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const lat = settings?.adresse_depart_lat ?? 43.7; // default to south france
+        const lng = settings?.adresse_depart_lng ?? 6.0;
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Europe%2FParis`
+        );
+        const data = await res.json();
+        const code = data.current.weathercode;
+        const temp = Math.round(data.current.temperature_2m);
+        const icons: Record<string, string> = {
+          '0': '☀️', '1': '🌤️', '2': '⛅', '3': '☁️',
+          '45': '🌫️', '48': '🌫️', '51': '🌦️', '53': '🌦️', '55': '🌧️',
+          '61': '🌧️', '63': '🌧️', '65': '🌧️', '71': '🌨️', '73': '🌨️',
+          '75': '❄️', '80': '🌦️', '81': '🌧️', '82': '⛈️',
+          '85': '🌨️', '86': '❄️', '95': '⛈️', '96': '⛈️', '99': '⛈️',
+        };
+        const descs: Record<string, string> = {
+          '0': 'Ensoleillé', '1': 'Peu nuageux', '2': 'Partiellement nuageux', '3': 'Couvert',
+          '45': 'Brouillard', '48': 'Brouillard givrant', '51': 'Bruine légère', '53': 'Bruine', '55': 'Bruine forte',
+          '61': 'Pluie légère', '63': 'Pluie', '65': 'Pluie forte', '71': 'Neige légère', '73': 'Neige', '75': 'Neige forte',
+          '80': 'Averses', '81': 'Averses modérées', '82': 'Averses fortes',
+          '85': 'Averses neigeuses', '86': 'Averses neigeuses fortes', '95': 'Orage', '96': 'Orage avec grêle', '99': 'Orage violent',
+        };
+        setWeather({ temp, desc: descs[String(code)] ?? 'Inconnu', icon: icons[String(code)] ?? '🌡️', city: '' });
+      } catch { /* ignore */ }
+    };
+    fetchWeather();
+  }, [settings?.adresse_depart_lat]);
 
   const effectues = todayRdvs.filter((r) => r.statut === 'effectue').length;
   const aVenir = todayRdvs.filter((r) => r.statut === 'planifie').length;
@@ -66,8 +99,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* KPI chips */}
-        <div className="flex gap-3 mt-4 relative">
+        {/* KPI chips + météo */}
+        <div className="flex gap-3 mt-4 relative flex-wrap">
           <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
             <Clock className="w-4 h-4 text-blue-200" />
             <span className="text-white text-sm font-semibold">{aVenir} à venir</span>
@@ -80,6 +113,15 @@ export default function DashboardPage() {
             <Users className="w-4 h-4 text-violet-300" />
             <span className="text-white text-sm font-semibold">{patients.length} patients</span>
           </div>
+          {weather && (
+            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
+              <span className="text-lg">{weather.icon}</span>
+              <div>
+                <span className="text-white text-sm font-semibold">{weather.temp}°C</span>
+                <span className="text-blue-200 text-xs ml-1.5">{weather.desc}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
