@@ -100,20 +100,46 @@ pushHistory({ type: 'ADD_PATIENT', patient: newP });
           {/* Nom / Prénom */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              {/* Photo */}
-              <div className="flex items-center gap-4 mb-2">
-                <div className="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {form.photo_url ? (
-                    <img src={form.photo_url} alt="Photo" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl text-slate-300">👤</span>
-                  )}
+              {/* Photo upload */}
+              <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'8px' }}>
+                <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'#F1F5F9', border:'2px solid #E2E8F0', overflow:'hidden', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {form.photo_url
+                    ? <img src={form.photo_url} alt="Photo" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    : <span style={{ fontSize:'24px', color:'#CBD5E1' }}>👤</span>}
                 </div>
-                <div className="flex-1">
-                  <label className="label">Photo (URL ou upload)</label>
-                  <input className="input text-sm" placeholder="https://... ou laisser vide"
-                    value={form.photo_url} onChange={e => set('photo_url', e.target.value)} />
-                  <p className="text-[11px] text-slate-400 mt-1">Collez l'URL d'une photo ou laissez vide</p>
+                <div style={{ flex:1 }}>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#374151', marginBottom:'6px' }}>Photo du patient</label>
+                  <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                    <input
+                      type="file" accept="image/*" id="photo-upload"
+                      style={{ display:'none' }}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = ev => set('photo_url', ev.target?.result as string ?? '');
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    <label htmlFor="photo-upload"
+                      style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 14px', background:'#F8FAFC', border:'1.5px solid #E2E8F0', borderRadius:'9px', fontSize:'13px', fontWeight:500, color:'#374151', cursor:'pointer', transition:'all 0.15s' }}>
+                      📁 Choisir un fichier
+                    </label>
+                    {form.photo_url && (
+                      <button type="button" onClick={() => set('photo_url', '')}
+                        style={{ padding:'8px 12px', background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:'9px', fontSize:'12px', color:'#EF4444', cursor:'pointer' }}>
+                        ✕ Retirer
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ fontSize:'11px', color:'#94A3B8', marginTop:'4px' }}>
+                    Photo locale (max 2 Mo) · JPG, PNG, WEBP
+                  </p>
+                  {/* Also allow URL */}
+                  <input style={{ width:'100%', padding:'8px 12px', background:'#F8FAFC', border:'1.5px solid #E2E8F0', borderRadius:'9px', fontSize:'12px', color:'#0F172A', outline:'none', marginTop:'6px', boxSizing:'border-box' as 'border-box', fontFamily:'inherit' }}
+                    placeholder="ou collez une URL : https://..."
+                    value={form.photo_url?.startsWith('data:') ? '' : (form.photo_url ?? '')}
+                    onChange={e => set('photo_url', e.target.value)} />
                 </div>
               </div>
               <label className="label">Prénom *</label>

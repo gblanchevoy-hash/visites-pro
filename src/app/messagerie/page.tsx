@@ -82,7 +82,9 @@ export default function MessageriePage() {
         .order('created_at');
       setMessages((data as Message[]) ?? []);
       // Mark as read
-      await supabase.from('messages').update({ lu: true }).eq('destinataire_id', user.id).eq('expediteur_id', otherId).eq('lu', false);
+      // Mark as read — triggers Sidebar unread count refresh via realtime UPDATE event
+      await supabase.from('messages').update({ lu: true })
+        .eq('destinataire_id', user.id).eq('expediteur_id', otherId).eq('lu', false);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
     load();
@@ -120,9 +122,24 @@ export default function MessageriePage() {
     if (!newMsg.trim() || !selectedCollab || !user) return;
     setSending(true);
     const otherId = selectedCollab.demandeur_id === user.id ? selectedCollab.destinataire_id : selectedCollab.demandeur_id;
-    const { error } = await supabase.from('messages').insert({ expediteur_id: user.id, destinataire_id: otherId, contenu: newMsg.trim() });
-    if (error) { toast.error('Erreur envoi'); setSending(false); return; }
+    const contenu = newMsg.trim();
+    // Add message locally immediately so sender sees it right away
+    const tempMsg: Message = {
+      id: `temp-${Date.now()}`,
+      expediteur_id: user.id,
+      destinataire_id: otherId,
+      contenu,
+      lu: false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, tempMsg]);
     setNewMsg('');
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    const { error } = await supabase.from('messages').insert({ expediteur_id: user.id, destinataire_id: otherId, contenu });
+    if (error) {
+      toast.error('Erreur envoi');
+      setMessages(prev => prev.filter(m => m.id !== tempMsg.id)); // rollback
+    }
     setSending(false);
   };
 

@@ -3,8 +3,8 @@ import '@/styles/globals.css';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'Itilib — Gestion de tournées à domicile',
-  description: 'Application professionnelle pour organiser vos visites à domicile, optimiser vos tournées et calculer vos frais kilométriques.',
+  title: 'Itilib — L\'outil indispensable des pros itinérants',
+  description: 'Itilib : planification, cartographie, kilométrage et rapport fiscal pour tous les professionnels itinérants. Infirmiers, kinés, techniciens, VRP et plus.',
   manifest: '/manifest.json',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Itilib' },
   formatDetection: { telephone: false },

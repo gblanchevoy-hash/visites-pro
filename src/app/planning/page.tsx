@@ -202,27 +202,61 @@ export default function PlanningPage() {
   };
   const removeGhost = () => { ghostRef.current?.remove(); ghostRef.current = null; };
 
+  // ── Context menu state ──
+  const [ctxMenu, setCtxMenu] = useState<{ rdv: RendezVous; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [ctxMenu]);
+
+  const handleCtxSupprimer = async (rdv: RendezVous) => {
+    setCtxMenu(null);
+    if (!confirm(`Supprimer le RDV de ${getRdvLabel(rdv)} ?`)) return;
+    const { error } = await supabase.from('rendez_vous').delete().eq('id', rdv.id);
+    if (error) { toast.error('Erreur suppression'); return; }
+    const store = useAppStore.getState();
+    store.removeRendezVous(rdv.id);
+    pushHistory({ type: 'DELETE_RDV', rdv });
+    toast.success('RDV supprimé');
+  };
+
+  const handleCtxDupliquer = async (rdv: RendezVous) => {
+    setCtxMenu(null);
+    const { data, error } = await supabase.from('rendez_vous').insert({
+      user_id: rdv.user_id, patient_id: rdv.patient_id ?? null,
+      date: rdv.date, heure_debut: rdv.heure_debut, heure_fin: rdv.heure_fin,
+      duree_minutes: rdv.duree_minutes, statut: 'planifie',
+      notes: rdv.notes ? `[Copie] ${rdv.notes}` : null,
+      couleur: rdv.couleur ?? null, lat: rdv.lat ?? null, lng: rdv.lng ?? null,
+    }).select('*, patient:patients(*)').single();
+    if (error) { toast.error('Erreur duplication'); return; }
+    const store = useAppStore.getState();
+    store.addRendezVous(data as unknown as RendezVous);
+    pushHistory({ type: 'ADD_RDV', rdv: data as unknown as RendezVous });
+    toast.success('RDV dupliqué');
+  };
+
   // ── Drag & drop ──
-  const dragState = useRef<{ rdv: RendezVous; rect: DOMRect; days?: Date[]; moved: boolean } | null>(null);
-  const DRAG_THRESHOLD = 8;
+  const dragState = useRef<{ rdv: RendezVous; rect: DOMRect; days?: Date[]; moved: boolean; clickTime: number } | null>(null);
+  const DRAG_THRESHOLD = 6;
+  const LONG_PRESS_MS = 180;
 
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
     e.preventDefault(); e.stopPropagation();
-
-    // On touch devices (tablets, phones) skip the press-and-drag logic entirely —
-    // a tap should just open the edit modal immediately, no ghost/drag confusion.
-    if (e.pointerType === 'touch') {
-      setEditRdv(rdv); setShowModal(true);
-      return;
-    }
+    if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
 
     const sx = e.clientX, sy = e.clientY;
-    dragState.current = { rdv, rect: container.getBoundingClientRect(), days, moved: false };
+    dragState.current = { rdv, rect: container.getBoundingClientRect(), days, moved: false, clickTime: Date.now() };
 
     const onMove = (mv: MouseEvent) => {
       if (!dragState.current) return;
       const dx = mv.clientX - sx, dy = mv.clientY - sy;
-      if (!dragState.current.moved && Math.sqrt(dx*dx + dy*dy) > DRAG_THRESHOLD) {
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const elapsed = Date.now() - dragState.current.clickTime;
+      if (!dragState.current.moved && dist > DRAG_THRESHOLD && elapsed > LONG_PRESS_MS) {
         dragState.current.moved = true;
         createGhost(rdv, mv.clientX, mv.clientY);
         setDraggingId(rdv.id);
@@ -238,16 +272,14 @@ export default function PlanningPage() {
         if (hEl) hEl.textContent = `${fmtH(t)} – ${fmtH(minutesToTime(Math.min(mins + rdv.duree_minutes, 23*60)))}`;
       }
     };
+
     const onUp = async (up: MouseEvent) => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       if (!dragState.current) { setDraggingId(null); return; }
       const { rdv: r, rect, days: ds, moved } = dragState.current;
       removeGhost();
-      if (!moved) {
-        setDraggingId(null); dragState.current = null;
-        setEditRdv(r); setShowModal(true); return;
-      }
+      if (!moved) { setDraggingId(null); dragState.current = null; return; }
       const relY = up.clientY - rect.top;
       const mins = snapTo15(Math.max(DAY_START*60, DAY_START*60 + Math.round(relY/HOUR_HEIGHT*60)));
       const newH = minutesToTime(Math.min(mins, 22*60));
@@ -293,46 +325,56 @@ export default function PlanningPage() {
     style: React.CSSProperties;
     onPointerDown: (e: React.PointerEvent) => void;
   }) => {
-    const { dot, border, bg, hColor } = getRdvColors(rdv);
+    const { dot, hColor } = getRdvColors(rdv);
     const isDrag = draggingId === rdv.id;
     const height = parseFloat(style.height as string);
 
-    // Extract user notes — strip the [Occasionnel] header line if present
     const rawNotes = rdv.notes ?? '';
     const isOcc = rawNotes.startsWith('[Occasionnel]');
     const userNotes = isOcc ? rawNotes.split('\n').slice(1).join('\n').trim() : rawNotes.trim();
-
-    // Parse occasionnel header for address/phone: "[Occasionnel] Nom · Adresse · Tel"
     const occParts = isOcc ? rawNotes.split('\n')[0].replace('[Occasionnel] ', '').split(' · ') : [];
-    const occAdresse = isOcc ? (occParts[1] ?? '') : '';
+    const occAdresse  = isOcc ? (occParts[1] ?? '') : '';
     const occTelephone = isOcc ? (occParts[2] ?? '') : '';
-
     const adresse   = rdv.patient?.adresse || occAdresse || '';
     const ville     = rdv.patient?.ville || '';
     const telephone = rdv.patient?.telephone || occTelephone || '';
-
     const hasInfo = !!(adresse || telephone || userNotes);
 
+    // Rich tooltip matching bobv.png style
+    const patientPhoto = rdv.patient?.photo_url;
+
     const tooltipContent = (
-      <div className="space-y-1.5">
-        <p className="font-semibold text-[12px]" style={{ color: '#92400e' }}>{getRdvLabel(rdv)}</p>
-        <p className="text-[11px] opacity-80">{fmtH(rdv.heure_debut)} – {fmtH(rdv.heure_fin)}</p>
+      <div style={{ minWidth: '220px' }}>
+        {/* Header: photo + name + time */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+          {patientPhoto ? (
+            <img src={patientPhoto} alt="" style={{ width:'36px', height:'36px', borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid #E2E8F0' }} />
+          ) : (
+            <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:dot+'22', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:dot, display:'block' }} />
+            </div>
+          )}
+          <div>
+            <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a', display:'block' }}>{getRdvLabel(rdv)}</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{fmtH(rdv.heure_debut)} — {fmtH(rdv.heure_fin)}</span>
+          </div>
+        </div>
         {adresse && (
-          <div className="flex items-start gap-1.5 pt-1 border-t border-amber-200/60">
-            <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
-            <span className="text-[11px]">{adresse}{ville ? `, ${ville}` : ''}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>📍</span>
+            <span style={{ fontSize: '12px', color: '#374151' }}>{adresse}{ville ? `, ${ville}` : ''}</span>
           </div>
         )}
         {telephone && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] opacity-60">📞</span>
-            <span className="text-[11px]">{telephone}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>📞</span>
+            <span style={{ fontSize: '12px', color: '#374151' }}>{telephone}</span>
           </div>
         )}
         {userNotes && (
-          <div className="flex items-start gap-1.5 pt-1 border-t border-amber-200/60">
-            <FileText className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
-            <span className="text-[11px] whitespace-pre-wrap">{userNotes}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>💬</span>
+            <span style={{ fontSize: '12px', color: '#374151', whiteSpace: 'pre-wrap' }}>{userNotes}</span>
           </div>
         )}
       </div>
@@ -347,10 +389,10 @@ export default function PlanningPage() {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       if (tooltipTimer.current) clearTimeout(tooltipTimer.current);
       tooltipTimer.current = setTimeout(() => {
-        const x = Math.min(Math.max(260 + 8, rect.left), window.innerWidth - 280);
-        setTooltipPos({ x, y: rect.bottom + 10 });
+        const x = Math.min(Math.max(230, rect.left), window.innerWidth - 290);
+        setTooltipPos({ x, y: rect.bottom + 8 });
         setTooltipVisible(true);
-      }, 200);
+      }, 180);
     };
 
     const handleMouseLeave = () => {
@@ -363,47 +405,58 @@ export default function PlanningPage() {
       <>
         <div
           onPointerDown={onPointerDown}
+          onDoubleClick={() => { setEditRdv(rdv); setShowModal(true); }}
+          onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ rdv, x: e.clientX, y: e.clientY }); }}
           onMouseEnter={hasInfo ? handleMouseEnter : undefined}
           onMouseLeave={hasInfo ? handleMouseLeave : undefined}
           className={cn('absolute select-none z-20 transition-all duration-100',
-            isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:scale-[1.01] hover:shadow-md')}
+            isDrag ? 'opacity-30 scale-[0.97]' : 'cursor-grab hover:shadow-md')}
           style={{
             ...style,
-            background: bg,
-            border: `1.5px solid ${border}`,
-            borderRadius: '14px',
-            boxShadow: isDrag ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
-            padding: '8px 10px',
+            background: '#ffffff',
+            borderRadius: '8px',
+            borderLeft: `3px solid ${hColor}`,
+            border: `1px solid #e2e8f0`,
+            borderLeftWidth: '3px',
+            borderLeftColor: hColor,
+            boxShadow: isDrag ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+            padding: '7px 10px',
             overflow: 'hidden',
             touchAction: 'manipulation',
           }}>
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[12px] font-bold leading-tight" style={{ color: hColor }}>
-              {fmtH(rdv.heure_debut)} – {fmtH(rdv.heure_fin)}
+          {/* Time row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', lineHeight: 1.2 }}>
+              {fmtH(rdv.heure_debut)} — {fmtH(rdv.heure_fin)}
             </span>
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
           </div>
-          {height > 38 && (
-            <p className="text-[12px] font-semibold text-slate-800 mt-1 leading-tight truncate">
+          {/* Name */}
+          {height > 36 && (
+            <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {getRdvLabel(rdv)}
             </p>
           )}
-          {height > 60 && rdv.patient?.adresse && (
-            <p className="text-[11px] text-slate-400 mt-0.5 truncate leading-tight">
-              {rdv.patient.adresse}
+          {/* Address */}
+          {height > 58 && adresse && (
+            <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {adresse}
             </p>
           )}
-          {hasInfo && (
-            <div className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white" style={{ background: hColor, opacity: 0.7 }} />
-          )}
         </div>
-        {/* Tooltip rendered via portal — completely outside the calendar grid */}
+
+        {/* Tooltip — white card, bobv.png style */}
         {tooltipVisible && tooltipPos && typeof window !== 'undefined' && createPortal(
-          <div style={{ position: 'fixed', left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px`, zIndex: 99999, pointerEvents: 'none', maxWidth: '260px' }}>
-            <div style={{ background: '#fffbeb', color: '#1e293b', borderRadius: '12px', padding: '10px 14px', boxShadow: '0 8px 28px rgba(0,0,0,0.18)', border: '1.5px solid #fde68a' }}>
+          <div style={{
+            position: 'fixed', left: `${tooltipPos.x}px`, top: `${tooltipPos.y}px`,
+            zIndex: 99999, pointerEvents: 'none', maxWidth: '280px',
+          }}>
+            <div style={{
+              background: '#ffffff', borderRadius: '14px', padding: '14px 16px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.14)', border: '1px solid #e2e8f0',
+            }}>
               {tooltipContent}
             </div>
-            <div style={{ position: 'absolute', top: '-5px', left: '16px', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid #fde68a' }} />
           </div>,
           document.body
         )}
@@ -421,14 +474,14 @@ export default function PlanningPage() {
     const showNowLine = isToday && now.getHours() >= DAY_START && now.getHours() < DAY_START + HOURS.length;
 
     return (
-      <div className="flex-1 overflow-y-auto" style={{ background: '#f8fafc' }}>
+      <div className="flex-1 overflow-y-auto" style={{ background: '#ffffff' }}>
         <div className="relative mx-4 mt-2" ref={ref}>
           {HOURS.map(h => (
             <div key={h} className="flex" style={{ height: `${HOUR_HEIGHT}px` }}>
               <div className="w-14 shrink-0 flex items-start pt-2 justify-end pr-3">
                 <span className="text-[12px] text-slate-400 font-medium">{h}h00</span>
               </div>
-              <div className="flex-1 border-t border-slate-200/70 border-dashed cursor-pointer hover:bg-blue-50/30 transition-colors"
+              <div className="flex-1 border-t cursor-pointer hover:bg-blue-50/20 transition-colors" style={{ borderColor: "#f1f5f9", borderStyle: "solid" }}
                 onClick={() => { if (!draggingId) openNew(toISODate(currentDate), `${String(h).padStart(2,'0')}:00`); }} />
             </div>
           ))}
@@ -476,7 +529,7 @@ export default function PlanningPage() {
     const todayWidth = `calc((100% - 56px) / 7)`;
 
     return (
-      <div className="flex-1 overflow-auto" style={{ background: '#f8fafc' }}>
+      <div className="flex-1 overflow-auto" style={{ background: '#ffffff' }}>
         {/* Day header */}
         <div className="sticky top-0 z-30 flex border-b border-slate-200 bg-white shadow-sm" style={{ paddingLeft: '56px' }}>
           {days.map(d => {
@@ -504,7 +557,7 @@ export default function PlanningPage() {
               </div>
               {days.map(d => (
                 <div key={d.toISOString()}
-                  className={cn('flex-1 border-t border-l border-slate-200/70 border-dashed cursor-pointer hover:bg-blue-50/20 transition-colors', isSameDay(d, new Date()) && 'bg-blue-50/20')}
+                  className={cn('flex-1 border-t border-l cursor-pointer hover:bg-blue-50/15 transition-colors', isSameDay(d, new Date()) && 'bg-blue-50/30')} style={{ borderColor: "#f1f5f9", borderStyle: "solid" }}
                   onClick={() => { if (!draggingId) openNew(toISODate(d), `${String(h).padStart(2,'0')}:00`); }} />
               ))}
             </div>
@@ -552,7 +605,7 @@ export default function PlanningPage() {
   const MonthView = () => {
     const days = getMonthDays(currentDate);
     return (
-      <div className="flex-1 overflow-auto p-4" style={{ background: '#f8fafc' }}>
+      <div className="flex-1 overflow-auto p-4" style={{ background: '#ffffff' }}>
         <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-2xl overflow-hidden shadow-sm">
           {['LUN','MAR','MER','JEU','VEN','SAM','DIM'].map(j => (
             <div key={j} className="bg-slate-100 py-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">{j}</div>
@@ -697,6 +750,50 @@ export default function PlanningPage() {
       {showModal && (
         <RdvModal rdv={editRdv} defaultDate={selectedDate} defaultTime={selectedTime ?? undefined}
           onClose={() => { setShowModal(false); setEditRdv(null); setSelectedTime(null); }} />
+      )}
+
+      {/* ── Context menu ── */}
+      {ctxMenu && createPortal(
+        <div style={{
+          position: 'fixed', left: `${Math.min(ctxMenu.x, window.innerWidth - 190)}px`,
+          top: `${Math.min(ctxMenu.y, window.innerHeight - 180)}px`,
+          zIndex: 99999, width: '180px',
+          background: '#ffffff', border: '1px solid #E2E8F0',
+          borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+          overflow: 'hidden', padding: '4px',
+        }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* RDV name header */}
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #F1F5F9', marginBottom: '4px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {getRdvLabel(ctxMenu.rdv)}
+            </p>
+            <p style={{ fontSize: '11px', color: '#94A3B8' }}>{fmtH(ctxMenu.rdv.heure_debut)} – {fmtH(ctxMenu.rdv.heure_fin)}</p>
+          </div>
+          {[
+            { icon: '✏️', label: 'Modifier', action: () => { setCtxMenu(null); setEditRdv(ctxMenu.rdv); setShowModal(true); } },
+            { icon: '↔️', label: 'Déplacer', action: () => { setCtxMenu(null); toast('Maintenez le clic gauche et glissez le RDV', { icon: '↔️', duration: 3000 }); } },
+            { icon: '📋', label: 'Dupliquer', action: () => handleCtxDupliquer(ctxMenu.rdv) },
+            { icon: '🗑️', label: 'Supprimer', action: () => handleCtxSupprimer(ctxMenu.rdv), danger: true },
+          ].map(item => (
+            <button key={item.label} onClick={item.action}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                padding: '9px 12px', border: 'none', background: 'none',
+                borderRadius: '8px', cursor: 'pointer', textAlign: 'left' as const,
+                fontSize: '13px', fontWeight: 500,
+                color: (item as { danger?: boolean }).danger ? '#EF4444' : '#0F172A',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = (item as { danger?: boolean }).danger ? '#FEF2F2' : '#F8FAFC')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+              <span style={{ fontSize: '14px' }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>,
+        document.body
       )}
     </AppShell>
   );

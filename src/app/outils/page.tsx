@@ -6,30 +6,29 @@ import { Phone, Calculator, ChevronDown, ChevronUp, Printer } from 'lucide-react
 
 // ── Numéros utiles ──
 const NUMEROS = [
-  { cat: '🚨 Urgences', nums: [
+  { cat: 'Urgences', color: '#EF4444', bg: '#FEF2F2', nums: [
     { label: 'SAMU', num: '15', desc: 'Urgences médicales' },
     { label: 'Police / Gendarmerie', num: '17', desc: '' },
     { label: 'Pompiers', num: '18', desc: '' },
-    { label: 'Numéro d\'urgence européen', num: '112', desc: 'Valable dans toute l\'Europe' },
+    { label: "Numéro d'urgence européen", num: '112', desc: "Valable dans toute l'Europe" },
   ]},
-  { cat: '🧓 Protection personnes âgées', nums: [
+  { cat: 'Protection personnes âgées', color: '#8B5CF6', bg: '#F5F3FF', nums: [
     { label: 'Maltraitance personnes âgées / handicapées', num: '3977', desc: 'Allô Maltraitance — 7j/7' },
     { label: 'Espace national Personnes Agées', num: '3179', desc: '' },
   ]},
-  { cat: '🧒 Protection enfants', nums: [
+  { cat: 'Protection enfants', color: '#F59E0B', bg: '#FFFBEB', nums: [
     { label: 'Enfance en danger', num: '119', desc: 'SNATED — 24h/24, 7j/7, gratuit' },
     { label: 'Aide aux victimes', num: '116006', desc: '' },
   ]},
-  { cat: '🐾 Protection animaux', nums: [
+  { cat: 'Protection animaux', color: '#10B981', bg: '#F0FDF4', nums: [
     { label: 'SPA / signalement maltraitance animale', num: '01 43 80 40 66', desc: 'SPA nationale' },
     { label: 'Gendarmerie (signalement)', num: '17', desc: 'Pour maltraitance animale' },
   ]},
-  { cat: '🧠 Santé mentale / Suicide', nums: [
-    { label: 'Prévention du suicide', num: '3114', desc: 'Numéro national de prévention du suicide — 24h/24' },
+  { cat: 'Santé mentale & Prévention suicide', color: '#2563EB', bg: '#EFF6FF', nums: [
+    { label: 'Prévention du suicide', num: '3114', desc: 'Numéro national — 24h/24' },
     { label: 'SOS Amitié', num: '09 72 39 40 50', desc: '24h/24' },
-    { label: 'Fil Santé Jeunes', num: '3114', desc: '' },
   ]},
-  { cat: '🏥 Soins & Santé', nums: [
+  { cat: 'Soins & Santé', color: '#0891B2', bg: '#F0FDFA', nums: [
     { label: 'Médecin de garde', num: '15', desc: 'Via le SAMU' },
     { label: 'Pharmacie de garde', num: '3237', desc: '' },
     { label: 'Centre antipoison', num: '0800 59 59 59', desc: 'Gratuit' },
@@ -109,23 +108,29 @@ export default function OutilsPage() {
         {tab === 'numeros' && (
           <div className="max-w-2xl space-y-3">
             {NUMEROS.map(cat => (
-              <div key={cat.cat} className="card overflow-hidden">
+              <div key={cat.cat} style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:'14px', overflow:'hidden', marginBottom:'8px', boxShadow:'0 2px 6px rgba(15,23,42,0.04)' }}>
                 <button onClick={() => setOpenCat(openCat === cat.cat ? null : cat.cat)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors">
-                  <span className="font-semibold text-slate-900">{cat.cat}</span>
-                  {openCat === cat.cat ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                  style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', background:'none', border:'none', cursor:'pointer' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                    <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:cat.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:cat.color, display:'block' }} />
+                    </div>
+                    <span style={{ fontSize:'14px', fontWeight:600, color:'#0F172A' }}>{cat.cat}</span>
+                    <span style={{ fontSize:'11px', fontWeight:600, padding:'2px 8px', borderRadius:'999px', background:cat.bg, color:cat.color }}>{cat.nums.length}</span>
+                  </div>
+                  {openCat === cat.cat ? <ChevronUp style={{ width:'16px', height:'16px', color:'#94A3B8' }} /> : <ChevronDown style={{ width:'16px', height:'16px', color:'#94A3B8' }} />}
                 </button>
                 {openCat === cat.cat && (
-                  <div className="border-t border-slate-100">
+                  <div style={{ borderTop:'1px solid #F1F5F9' }}>
                     {cat.nums.map(n => (
-                      <div key={n.num} className="flex items-center justify-between px-5 py-3 border-b border-slate-50 last:border-0">
+                      <div key={n.num} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid #F8FAFC', gap:'12px' }}>
                         <div>
-                          <p className="font-medium text-slate-800 text-sm">{n.label}</p>
-                          {n.desc && <p className="text-xs text-slate-400">{n.desc}</p>}
+                          <p style={{ fontSize:'13px', fontWeight:600, color:'#0F172A', marginBottom:'2px' }}>{n.label}</p>
+                          {n.desc && <p style={{ fontSize:'11px', color:'#94A3B8' }}>{n.desc}</p>}
                         </div>
                         <a href={`tel:${n.num.replace(/\s/g,'')}`}
-                          className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-xl text-sm font-bold hover:bg-primary-100 transition-colors">
-                          <Phone className="w-3.5 h-3.5" /> {n.num}
+                          style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 14px', background:cat.bg, color:cat.color, border:`1px solid ${cat.color}33`, borderRadius:'10px', fontSize:'13px', fontWeight:700, textDecoration:'none', flexShrink:0 }}>
+                          <Phone style={{ width:'13px', height:'13px' }} /> {n.num}
                         </a>
                       </div>
                     ))}

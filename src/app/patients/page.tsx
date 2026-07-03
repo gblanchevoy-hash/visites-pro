@@ -52,13 +52,13 @@ export default function PatientsPage() {
         title="Patients"
         subtitle={`${patients.length} patient${patients.length > 1 ? 's' : ''} enregistré${patients.length > 1 ? 's' : ''}`}
         actions={
-          <button onClick={openNew} className="btn-primary">
+          <button onClick={openNew} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"10px 20px",background:"#2563EB",color:"#fff",border:"none",borderRadius:"10px",fontSize:"14px",fontWeight:600,cursor:"pointer" }}>
             <Plus className="w-4 h-4" /> Nouveau patient
           </button>
         }
       />
 
-      <div className="flex-1 p-4 lg:p-6 overflow-auto">
+      <div style={{ flex:1,padding:"32px",background:"#F8FAFC",overflow:"auto" }}>
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-5">
           <div className="relative flex-1 min-w-[200px]">

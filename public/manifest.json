@@ -1,7 +1,7 @@
 {
-  "name": "Itilib — Gestion de tournées",
+  "name": "Itilib — Pros itinérants",
   "short_name": "Itilib",
-  "description": "Organisation professionnelle de visites à domicile",
+  "description": "L'outil indispensable des professionnels itinérants",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#f8fafc",
@@ -26,5 +26,9 @@
       "type": "image/png"
     }
   ],
-  "categories": ["medical", "productivity", "navigation"]
+  "categories": [
+    "medical",
+    "productivity",
+    "navigation"
+  ]
 }

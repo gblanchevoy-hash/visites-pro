@@ -17,58 +17,66 @@ export default function Topbar({ title, subtitle, actions, variant = 'default' }
 
   const handleUndo = async () => {
     if (!lastAction) return;
-    const label = describeAction(lastAction);
     await undo();
-    toast.success(`Annulé : ${label}`, { icon: '↩️' });
+    toast.success(`Annulé : ${describeAction(lastAction)}`, { icon: '↩️' });
   };
 
   const handleRedo = async () => {
     if (!nextAction) return;
-    const label = describeAction(nextAction);
     await redo();
-    toast.success(`Rétabli : ${label}`, { icon: '↪️' });
+    toast.success(`Rétabli : ${describeAction(nextAction)}`, { icon: '↪️' });
   };
 
-  const isRoad = variant === 'road';
-
   return (
-    <header className={`flex-shrink-0 flex items-center justify-between px-4 lg:px-6 py-4 border-b ${isRoad ? 'topbar-gradient border-white/10' : 'bg-white border-slate-100'}`}>
-      <div className="flex items-center gap-3">
+    <header style={{
+      flexShrink: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 20px',
+      height: '64px',
+      background: '#ffffff',
+      borderBottom: '1px solid #f1f5f9',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
           onClick={() => setSidebarOpen(true)}
-          className={`lg:hidden p-2 rounded-xl transition-colors ${isRoad ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-100 text-slate-600'}`}
-        >
+          className="lg:hidden p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
         <div>
-          <h1 className={`text-lg font-bold leading-tight ${isRoad ? 'text-white' : 'text-slate-900'}`}>{title}</h1>
-          {subtitle && <p className={`text-xs mt-0.5 ${isRoad ? 'text-blue-200' : 'text-slate-500'}`}>{subtitle}</p>}
+          <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{title}</h1>
+          {subtitle && <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '1px' }}>{subtitle}</p>}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {/* Undo */}
         {lastAction && (
-          <button
-            onClick={handleUndo}
-            title={`Annuler : ${describeAction(lastAction)}`}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-              isRoad ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-            }`}
-          >
+          <button onClick={handleUndo} title={`Annuler : ${describeAction(lastAction)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: '10px', border: '1px solid #e2e8f0',
+              background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f1f5f9')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#f8fafc')}>
             <Undo2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Annuler</span>
           </button>
         )}
         {/* Redo */}
         {nextAction && (
-          <button
-            onClick={handleRedo}
-            title={`Rétablir : ${describeAction(nextAction)}`}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-              isRoad ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-            }`}
-          >
+          <button onClick={handleRedo} title={`Rétablir : ${describeAction(nextAction)}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: '10px', border: '1px solid #e2e8f0',
+              background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f1f5f9')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#f8fafc')}>
             <Redo2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Rétablir</span>
           </button>

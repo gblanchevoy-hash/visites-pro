@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   lat: number;
@@ -73,12 +73,22 @@ export default function MiniMapPicker({ lat, lng, onChange }: Props) {
     } catch { /* ignore */ }
   }, [lat, lng]);
 
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div>
-      <div ref={mapRef} className="w-full h-40 rounded-xl overflow-hidden border border-slate-200" style={{ zIndex: 0 }} />
-      <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
-        <span>📍</span> Glissez le repère pour ajuster la position exacte
-      </p>
+      <div ref={mapRef}
+        className="w-full rounded-xl overflow-hidden border border-slate-200 transition-all duration-300"
+        style={{ zIndex: 0, height: expanded ? '320px' : '160px' }} />
+      <div className="flex items-center justify-between mt-1.5">
+        <p className="text-[11px] text-slate-400 flex items-center gap-1">
+          <span>📍</span> Glissez le repère pour ajuster la position exacte
+        </p>
+        <button type="button" onClick={() => setExpanded(e => !e)}
+          className="text-[11px] text-primary-600 font-medium hover:text-primary-700 transition-colors flex items-center gap-1">
+          {expanded ? '🗗 Réduire' : '⛶ Agrandir la carte'}
+        </button>
+      </div>
     </div>
   );
 }

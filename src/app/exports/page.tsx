@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import Link from 'next/link';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
@@ -124,19 +125,19 @@ export default function ExportsPage() {
     <AppShell>
       <Topbar title="Exports" subtitle="Générez vos rapports et feuilles de tournée" />
 
-      <div className="flex-1 p-4 lg:p-6 space-y-6 max-w-2xl overflow-auto">
+      <div style={{ flex:1,padding:"32px",background:"#F8FAFC",overflow:"auto" }}>
         {/* Date selector */}
-        <div className="card p-5">
+        <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
           <h2 className="font-semibold text-slate-900 mb-4">Paramètres d'export</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Date pour les tournées</label>
-              <input type="date" className="input" value={exportDate}
+              <label style={{ display:"block",fontSize:"12px",fontWeight:600,color:"#374151",marginBottom:"6px" }}>Date pour les tournées</label>
+              <input type="date" style={{ width:"100%",padding:"11px 14px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:"10px",fontSize:"14px",color:"#0F172A",outline:"none",fontFamily:"inherit",boxSizing:"border-box" as "border-box" }} value={exportDate}
                 onChange={(e) => setExportDate(e.target.value)} />
             </div>
             <div>
-              <label className="label">Année pour les rapports</label>
-              <select className="input" value={exportYear}
+              <label style={{ display:"block",fontSize:"12px",fontWeight:600,color:"#374151",marginBottom:"6px" }}>Année pour les rapports</label>
+              <select style={{ width:"100%",padding:"11px 14px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:"10px",fontSize:"14px",color:"#0F172A",outline:"none",fontFamily:"inherit",boxSizing:"border-box" as "border-box" }} value={exportYear}
                 onChange={(e) => setExportYear(Number(e.target.value))}>
                 {Array.from({ length: new Date().getFullYear() - 2022 + 1 }, (_, i) => 2022 + i).map((y) => <option key={y} value={y}>{y}</option>)}
               </select>

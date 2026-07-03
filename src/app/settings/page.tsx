@@ -6,20 +6,31 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { UserSettings } from '@/types';
 import toast from 'react-hot-toast';
-import { Key, Clock, Loader2, Eye, EyeOff, CheckCircle2, AlertCircle, User, Shield } from 'lucide-react';
+import { Key, Clock, Loader2, Eye, EyeOff, CheckCircle2, AlertCircle, User, Shield, Save } from 'lucide-react';
+
+const S = {
+  page: { flex:1, background:'#F8FAFC', overflow:'auto' as const, padding:'32px' },
+  card: { background:'#fff', border:'1px solid #E2E8F0', borderRadius:'16px', boxShadow:'0 4px 12px rgba(15,23,42,0.04)', padding:'24px', marginBottom:'16px' },
+  cardHeader: { display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', paddingBottom:'16px', borderBottom:'1px solid #F1F5F9' },
+  iconBox: (bg:string) => ({ width:'40px',height:'40px',borderRadius:'12px',background:bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 as const }),
+  label: { display:'block',fontSize:'12px',fontWeight:600,color:'#374151',marginBottom:'6px' },
+  input: { width:'100%',padding:'11px 14px',background:'#F8FAFC',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#0F172A',outline:'none',fontFamily:'inherit',boxSizing:'border-box' as const },
+  title: { fontSize:'15px',fontWeight:600,color:'#0F172A' },
+  sub:   { fontSize:'12px',color:'#94A3B8',marginTop:'2px' },
+};
 
 export default function SettingsPage() {
   const { user, settings, setSettings, setCachedOrsKey } = useAppStore();
-  const [orsKey, setOrsKey]       = useState('');
-  const [showKey, setShowKey]     = useState(false);
+  const [orsKey, setOrsKey]         = useState('');
+  const [showKey, setShowKey]       = useState(false);
   const [testingKey, setTestingKey] = useState(false);
-  const [keyValid, setKeyValid]   = useState<boolean | null>(null);
-  const [pseudonyme, setPseudo]   = useState('');
-  const [bareme, setBareme]       = useState('0.62');
-  const [dureeVisite, setDuree]   = useState('30');
+  const [keyValid, setKeyValid]     = useState<boolean|null>(null);
+  const [pseudonyme, setPseudo]     = useState('');
+  const [bareme, setBareme]         = useState('0.62');
+  const [dureeVisite, setDuree]     = useState('30');
   const [heureDebut, setHeureDebut] = useState('08:00');
-  const [heureFin, setHeureFin]   = useState('19:00');
-  const [saving, setSaving]       = useState(false);
+  const [heureFin, setHeureFin]     = useState('19:00');
+  const [saving, setSaving]         = useState(false);
 
   useEffect(() => {
     if (!settings) return;
@@ -37,8 +48,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsKey}&start=2.3522,48.8566&end=2.3488,48.8534`);
       setKeyValid(res.ok);
-      if (res.ok) toast.success('Clé API valide !');
-      else toast.error('Clé API invalide');
+      if (res.ok) toast.success('Clé API valide !'); else toast.error('Clé API invalide');
     } catch { setKeyValid(false); toast.error('Impossible de tester'); }
     setTestingKey(false);
   };
@@ -46,23 +56,9 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const payload = {
-      user_id: user.id,
-      ors_api_key: orsKey,
-      pseudonyme: pseudonyme.trim(),
-      bareme_km: parseFloat(bareme),
-      duree_visite_defaut: parseInt(dureeVisite),
-      heure_debut_journee: heureDebut,
-      heure_fin_journee: heureFin,
-      adresse_depart: settings?.adresse_depart ?? '',
-      adresse_depart_lat: settings?.adresse_depart_lat ?? null,
-      adresse_depart_lng: settings?.adresse_depart_lng ?? null,
-      categories: settings?.categories ?? [],
-      couleurs_categories: settings?.couleurs_categories ?? {},
-      theme: 'light',
-    };
+    const payload = { user_id:user.id, ors_api_key:orsKey, pseudonyme:pseudonyme.trim(), bareme_km:parseFloat(bareme), duree_visite_defaut:parseInt(dureeVisite), heure_debut_journee:heureDebut, heure_fin_journee:heureFin, adresse_depart:settings?.adresse_depart??'', adresse_depart_lat:settings?.adresse_depart_lat??null, adresse_depart_lng:settings?.adresse_depart_lng??null, categories:settings?.categories??[], couleurs_categories:settings?.couleurs_categories??{}, theme:'light' };
     if (settings?.id) {
-      const { data, error } = await supabase.from('user_settings').update(payload).eq('id', settings.id).select().single();
+      const { data, error } = await supabase.from('user_settings').update(payload).eq('id',settings.id).select().single();
       if (error) { toast.error('Erreur sauvegarde'); setSaving(false); return; }
       setSettings(data as UserSettings);
     } else {
@@ -78,128 +74,99 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <Topbar title="Paramètres" subtitle="Configuration de votre compte" />
-      <div className="flex-1 p-4 lg:p-6 overflow-auto">
-        <div className="max-w-xl space-y-5">
+      <div style={S.page}>
+        <div style={{ maxWidth:'560px' }}>
 
-          {/* Pseudonyme */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-                <User className="w-5 h-5 text-violet-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Profil</h2>
-                <p className="text-xs text-slate-500">Votre prénom ou pseudonyme affiché dans l'application</p>
-              </div>
+          {/* Profil */}
+          <div style={S.card}>
+            <div style={S.cardHeader}>
+              <div style={S.iconBox('#EEF2FF')}><User style={{ width:'18px', height:'18px', color:'#6366F1' }} /></div>
+              <div><p style={S.title}>Profil</p><p style={S.sub}>Votre prénom ou pseudonyme affiché dans l'application</p></div>
             </div>
-            <div>
-              <label className="label">Prénom / Pseudonyme</label>
-              <input className="input" placeholder="Ex : Sophie, Dr Martin…"
-                value={pseudonyme} onChange={e => setPseudo(e.target.value)} />
-            </div>
+            <label style={S.label}>Prénom / Pseudonyme</label>
+            <input style={S.input} placeholder="Ex : Sophie, Dr Martin…" value={pseudonyme} onChange={e => setPseudo(e.target.value)} />
           </div>
 
-          {/* ORS API Key */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-road-50 flex items-center justify-center">
-                <Key className="w-5 h-5 text-road-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Clé API OpenRouteService</h2>
-                <p className="text-xs text-slate-500">Optionnel — une clé partagée est déjà configurée. Entrez la vôtre pour un quota dédié.</p>
-              </div>
+          {/* ORS Key */}
+          <div style={S.card}>
+            <div style={S.cardHeader}>
+              <div style={S.iconBox('#FFF7ED')}><Key style={{ width:'18px', height:'18px', color:'#F97316' }} /></div>
+              <div><p style={S.title}>Clé API OpenRouteService</p><p style={S.sub}>Optionnel — une clé partagée est déjà active</p></div>
             </div>
-            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-xs text-blue-700 space-y-1">
-              <p className="font-semibold text-blue-800">Comment obtenir votre clé gratuite :</p>
-              <ol className="space-y-0.5 list-decimal list-inside">
-                <li>Allez sur <a href="https://openrouteservice.org" target="_blank" rel="noreferrer" className="underline font-medium">openrouteservice.org</a></li>
-                <li>Cliquez "Get started" → créez un compte gratuit</li>
-                <li>Dans votre tableau de bord, copiez votre clé API</li>
-              </ol>
-              <p className="text-blue-600">Plan gratuit : 2 000 itinéraires/jour.</p>
+            <div style={{ padding:'12px 14px', background:'#EFF6FF', border:'1px solid #DBEAFE', borderRadius:'10px', fontSize:'12px', color:'#1D4ED8', marginBottom:'16px', lineHeight:1.6 }}>
+              <p style={{ fontWeight:600, marginBottom:'4px' }}>Comment obtenir votre clé gratuite :</p>
+              <p>1. Allez sur <a href="https://openrouteservice.org" target="_blank" rel="noreferrer" style={{ color:'#2563EB', textDecoration:'underline' }}>openrouteservice.org</a></p>
+              <p>2. Créez un compte gratuit → copiez votre clé API</p>
+              <p style={{ color:'#3B82F6', marginTop:'4px' }}>Plan gratuit : 2 000 itinéraires/jour.</p>
             </div>
-            <div>
-              <label className="label">Votre clé API</label>
-              <div className="relative">
-                <input type={showKey ? 'text' : 'password'} className="input pr-10"
-                  placeholder="5b3ce3597851110001cf6249…" value={orsKey}
-                  onChange={e => { setOrsKey(e.target.value); setKeyValid(null); }} />
-                <button type="button" onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+            <label style={S.label}>Votre clé API</label>
+            <div style={{ position:'relative', marginBottom:'12px' }}>
+              <input type={showKey ? 'text' : 'password'} style={{ ...S.input, paddingRight:'42px' }}
+                placeholder="5b3ce3597851110001cf6249…" value={orsKey}
+                onChange={e => { setOrsKey(e.target.value); setKeyValid(null); }} />
+              <button type="button" onClick={() => setShowKey(!showKey)}
+                style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#94A3B8' }}>
+                {showKey ? <EyeOff style={{ width:'16px', height:'16px' }} /> : <Eye style={{ width:'16px', height:'16px' }} />}
+              </button>
             </div>
-            <button onClick={handleTestKey} disabled={testingKey || !orsKey.trim()} className="btn-secondary w-full justify-center">
-              {testingKey ? <><Loader2 className="w-4 h-4 animate-spin" /> Test…</>
-                : keyValid === true ? <><CheckCircle2 className="w-4 h-4 text-forest-600" /> Clé valide ✓</>
-                : keyValid === false ? <><AlertCircle className="w-4 h-4 text-red-500" /> Invalide — réessayer</>
+            <button onClick={handleTestKey} disabled={testingKey || !orsKey.trim()}
+              style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'10px', background:'#F8FAFC', border:'1.5px solid #E2E8F0', borderRadius:'10px', fontSize:'13px', fontWeight:500, color:'#374151', cursor:'pointer' }}>
+              {testingKey ? <><Loader2 style={{ width:'14px', height:'14px', animation:'spin 0.8s linear infinite' }} /> Test en cours…</>
+                : keyValid === true ? <><CheckCircle2 style={{ width:'14px', height:'14px', color:'#10B981' }} /> Clé valide ✓</>
+                : keyValid === false ? <><AlertCircle style={{ width:'14px', height:'14px', color:'#EF4444' }} /> Invalide — réessayer</>
                 : '🔑 Tester la clé'}
             </button>
           </div>
 
           {/* Barème & durée */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-road-50 flex items-center justify-center">
-                <span className="text-road-600 font-bold">€</span>
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Kilomètres & visites</h2>
-                <p className="text-xs text-slate-500">Barème kilométrique et durée par défaut</p>
-              </div>
+          <div style={S.card}>
+            <div style={S.cardHeader}>
+              <div style={S.iconBox('#ECFDF5')}><span style={{ fontSize:'16px', color:'#10B981', fontWeight:700 }}>€</span></div>
+              <div><p style={S.title}>Kilomètres & visites</p><p style={S.sub}>Barème kilométrique et durée par défaut</p></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
               <div>
-                <label className="label">Barème km (€/km)</label>
-                <input type="number" step="0.001" min="0" className="input"
-                  value={bareme} onChange={e => setBareme(e.target.value)} />
-                <p className="text-[11px] text-slate-400 mt-1">URSSAF 2024 : 0,620 €/km</p>
+                <label style={S.label}>Barème km (€/km)</label>
+                <input type="number" step="0.001" min="0" style={S.input} value={bareme} onChange={e => setBareme(e.target.value)} />
+                <p style={{ fontSize:'11px', color:'#94A3B8', marginTop:'4px' }}>URSSAF 2024 : 0,620 €/km</p>
               </div>
               <div>
-                <label className="label">Durée visite défaut (min)</label>
-                <input type="number" step="5" min="5" className="input"
-                  value={dureeVisite} onChange={e => setDuree(e.target.value)} />
+                <label style={S.label}>Durée visite défaut (min)</label>
+                <input type="number" step="5" min="5" style={S.input} value={dureeVisite} onChange={e => setDuree(e.target.value)} />
               </div>
             </div>
           </div>
 
           {/* Horaires */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-violet-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Horaires de journée</h2>
-                <p className="text-xs text-slate-500">Plage horaire pour l'affichage du planning</p>
-              </div>
+          <div style={S.card}>
+            <div style={S.cardHeader}>
+              <div style={S.iconBox('#EEF2FF')}><Clock style={{ width:'18px', height:'18px', color:'#6366F1' }} /></div>
+              <div><p style={S.title}>Horaires de journée</p><p style={S.sub}>Plage horaire pour l'affichage du planning</p></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
               <div>
-                <label className="label">Début de journée</label>
-                <input type="time" className="input" value={heureDebut} onChange={e => setHeureDebut(e.target.value)} />
+                <label style={S.label}>Début de journée</label>
+                <input type="time" style={S.input} value={heureDebut} onChange={e => setHeureDebut(e.target.value)} />
               </div>
               <div>
-                <label className="label">Fin de journée</label>
-                <input type="time" className="input" value={heureFin} onChange={e => setHeureFin(e.target.value)} />
+                <label style={S.label}>Fin de journée</label>
+                <input type="time" style={S.input} value={heureFin} onChange={e => setHeureFin(e.target.value)} />
               </div>
             </div>
           </div>
 
-          {/* Security info */}
-          <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-            <Shield className="w-5 h-5 text-forest-600 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Vos paramètres sont chiffrés et stockés sur votre base Supabase, protégés par les règles de sécurité. Ils ne sont accessibles que par votre compte.
-            </p>
+          {/* Security */}
+          <div style={{ display:'flex', alignItems:'flex-start', gap:'12px', padding:'16px 20px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'12px', marginBottom:'20px' }}>
+            <Shield style={{ width:'18px', height:'18px', color:'#10B981', flexShrink:0, marginTop:'2px' }} />
+            <p style={{ fontSize:'12px', color:'#64748B', lineHeight:1.6 }}>Vos paramètres sont chiffrés et protégés par les règles de sécurité Supabase. Seul votre compte y a accès.</p>
           </div>
 
-          <button onClick={handleSave} disabled={saving} className="btn-primary w-full justify-center py-3 text-base font-semibold">
-            {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> Enregistrement…</> : <><CheckCircle2 className="w-5 h-5" /> Enregistrer les paramètres</>}
+          <button onClick={handleSave} disabled={saving}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#2563EB', color:'#fff', border:'none', borderRadius:'12px', fontSize:'15px', fontWeight:600, cursor:'pointer', boxShadow:'0 4px 14px rgba(37,99,235,0.3)' }}>
+            {saving ? <><Loader2 style={{ width:'18px', height:'18px', animation:'spin 0.8s linear infinite' }} /> Enregistrement…</> : <><Save style={{ width:'18px', height:'18px' }} /> Enregistrer les paramètres</>}
           </button>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </AppShell>
   );

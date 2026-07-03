@@ -6,50 +6,49 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { UserSettings } from '@/types';
 import toast from 'react-hot-toast';
-import { Navigation, Loader2, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Navigation, Loader2, CheckCircle2, AlertCircle, Clock, Save, Info } from 'lucide-react';
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete';
+
+const S = {
+  page: { flex:1, background:'#F8FAFC', overflow:'auto' as const, padding:'32px' },
+  card: { background:'#fff', border:'1px solid #E2E8F0', borderRadius:'16px', boxShadow:'0 4px 12px rgba(15,23,42,0.04)', padding:'24px', marginBottom:'16px' },
+  hdr: { display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', paddingBottom:'16px', borderBottom:'1px solid #F1F5F9' },
+  icon: (bg:string) => ({ width:'40px',height:'40px',borderRadius:'12px',background:bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 as const }),
+  label: { display:'block',fontSize:'12px',fontWeight:600,color:'#374151',marginBottom:'6px' } as React.CSSProperties,
+  input: { width:'100%',padding:'11px 14px',background:'#F8FAFC',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#0F172A',outline:'none',fontFamily:'inherit',boxSizing:'border-box' as const },
+  title: { fontSize:'15px',fontWeight:600,color:'#0F172A' } as React.CSSProperties,
+  sub:   { fontSize:'12px',color:'#94A3B8',marginTop:'2px' } as React.CSSProperties,
+};
+
+import React from 'react';
 
 export default function DepartPage() {
   const { user, settings, setSettings, pushHistory } = useAppStore();
-  const [adresse, setAdresse] = useState('');
-  const [lat, setLat] = useState<number | undefined>();
-  const [lng, setLng] = useState<number | undefined>();
-  const [saving, setSaving] = useState(false);
-  const [heureDebut, setHeureDebut] = useState('08:00');
-  const [heureFin, setHeureFin] = useState('19:00');
-  // Hydrate from settings or cache — never overwrite existing local values with empty ones
+  const [adresse, setAdresse]   = useState('');
+  const [lat, setLat]           = useState<number|undefined>();
+  const [lng, setLng]           = useState<number|undefined>();
+  const [heureDebut, setHD]     = useState('08:00');
+  const [heureFin, setHF]       = useState('19:00');
+  const [saving, setSaving]     = useState(false);
+
   useEffect(() => {
     if (!settings) return;
-    setAdresse((prev) => prev || settings?.adresse_depart || '');
-    setLat((prev) => prev ?? settings?.adresse_depart_lat ?? undefined);
-    setLng((prev) => prev ?? settings?.adresse_depart_lng ?? undefined);
-
-    setHeureDebut((prev) => prev !== '08:00' ? prev : (settings?.heure_debut_journee ?? '08:00'));
-    setHeureFin((prev) => prev !== '19:00' ? prev : (settings?.heure_fin_journee ?? '19:00'));
+    setAdresse(p => p || settings.adresse_depart || '');
+    setLat(p => p ?? settings.adresse_depart_lat ?? undefined);
+    setLng(p => p ?? settings.adresse_depart_lng ?? undefined);
+    setHD(p => p !== '08:00' ? p : (settings.heure_debut_journee ?? '08:00'));
+    setHF(p => p !== '19:00' ? p : (settings.heure_fin_journee ?? '19:00'));
   }, [settings]);
 
   const handleSave = async () => {
     if (!user) return;
-    if (!lat || !lng) { toast.error("Sélectionnez une adresse dans les suggestions"); return; }
+    if (!lat || !lng) { toast.error('Sélectionnez une adresse dans les suggestions'); return; }
     setSaving(true);
-    const payload = {
-      user_id: user.id,
-      adresse_depart: adresse,
-      adresse_depart_lat: lat,
-      adresse_depart_lng: lng,
-      ors_api_key: settings?.ors_api_key ?? '',
-      bareme_km: settings?.bareme_km ?? 0.62,
-      duree_visite_defaut: settings?.duree_visite_defaut ?? 30,
-      heure_debut_journee: heureDebut,
-      heure_fin_journee: heureFin,
-      categories: settings?.categories ?? [],
-      couleurs_categories: settings?.couleurs_categories ?? {},
-      theme: 'light',
-    };
+    const payload = { user_id:user.id, adresse_depart:adresse, adresse_depart_lat:lat, adresse_depart_lng:lng, ors_api_key:settings?.ors_api_key??'', bareme_km:settings?.bareme_km??0.62, duree_visite_defaut:settings?.duree_visite_defaut??30, heure_debut_journee:heureDebut, heure_fin_journee:heureFin, categories:settings?.categories??[], couleurs_categories:settings?.couleurs_categories??{}, theme:'light' };
     if (settings?.id) {
-      const { data, error } = await supabase.from('user_settings').update(payload).eq('id', settings.id).select().single();
+      const { data, error } = await supabase.from('user_settings').update(payload).eq('id',settings.id).select().single();
       if (error) { toast.error('Erreur sauvegarde'); setSaving(false); return; }
-      pushHistory({ type: 'UPDATE_SETTINGS', before: settings!, after: data as UserSettings });
+      pushHistory({ type:'UPDATE_SETTINGS', before:settings!, after:data as UserSettings });
       setSettings(data as UserSettings);
     } else {
       const { data, error } = await supabase.from('user_settings').insert(payload).select().single();
@@ -64,111 +63,76 @@ export default function DepartPage() {
 
   return (
     <AppShell>
-      <Topbar variant="road" title="Mon point de départ" subtitle="Adresse, horaires et itinéraires" />
-      <div className="flex-1 p-4 lg:p-6 overflow-auto">
+      <Topbar title="Mon départ" subtitle="Adresse et horaires de tournée" />
+      <div style={S.page}>
 
         {/* Status banner */}
-        <div className={`mb-6 rounded-2xl p-5 flex items-center gap-4 ${isConfigured ? 'bg-gradient-to-r from-forest-600 to-forest-500' : 'bg-gradient-to-r from-slate-700 to-slate-600'}`}>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/20 flex-shrink-0">
-            {isConfigured ? <CheckCircle2 className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white/60" />}
+        <div style={{ display:'flex', alignItems:'center', gap:'16px', padding:'18px 22px', borderRadius:'14px', marginBottom:'24px', background: isConfigured ? 'linear-gradient(135deg,#059669,#10B981)' : 'linear-gradient(135deg,#475569,#64748B)', boxShadow: isConfigured ? '0 4px 16px rgba(16,185,129,0.25)' : '0 4px 16px rgba(71,85,105,0.2)' }}>
+          <div style={{ width:'44px',height:'44px',borderRadius:'12px',background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>
+            {isConfigured ? <CheckCircle2 style={{ width:'22px',height:'22px',color:'#fff' }} /> : <AlertCircle style={{ width:'22px',height:'22px',color:'rgba(255,255,255,0.6)' }} />}
           </div>
           <div>
-            <p className="font-semibold text-white text-sm">{isConfigured ? 'Adresse de départ configurée ✓' : 'Adresse de départ requise'}</p>
-            <p className="text-xs text-white/70 mt-0.5">
-              {isConfigured ? `${adresse} · Départ ${heureDebut} · Fin ${heureFin}` : "Renseignez votre adresse de départ"}
-            </p>
+            <p style={{ fontWeight:600, color:'#fff', fontSize:'14px' }}>{isConfigured ? 'Adresse de départ configurée ✓' : 'Adresse de départ requise'}</p>
+            <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.75)', marginTop:'2px' }}>{isConfigured ? `${adresse} · ${heureDebut} → ${heureFin}` : 'Renseignez votre adresse ci-dessous'}</p>
           </div>
         </div>
 
-        <div className="max-w-xl space-y-5">
+        <div style={{ maxWidth:'560px' }}>
 
           {/* Adresse */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                <Navigation className="w-5 h-5 text-primary-600" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Adresse de départ</h2>
-                <p className="text-xs text-slate-500">Votre cabinet, domicile ou point de départ habituel</p>
-              </div>
+          <div style={S.card}>
+            <div style={S.hdr}>
+              <div style={S.icon('#EFF6FF')}><Navigation style={{ width:'18px',height:'18px',color:'#2563EB' }} /></div>
+              <div><p style={S.title}>Adresse de départ</p><p style={S.sub}>Votre cabinet, domicile ou point de départ habituel</p></div>
             </div>
-            <div>
-              <label className="label">Adresse</label>
-              <AddressAutocomplete
-                value={adresse}
-                onChange={(v) => { setAdresse(v); setLat(undefined); setLng(undefined); }}
-                onSelect={({ adresse: a, lat: lt, lng: lg }) => { setAdresse(a); setLat(lt); setLng(lg); }}
-                placeholder="15 avenue de la Gare, 83600 Fréjus"
-              />
-              <p className="text-xs text-slate-400 mt-1.5">Tapez pour voir les suggestions — cliquez sur une pour la géolocaliser automatiquement</p>
-            </div>
+            <label style={S.label}>Adresse</label>
+            <AddressAutocomplete value={adresse}
+              onChange={v => { setAdresse(v); setLat(undefined); setLng(undefined); }}
+              onSelect={({ adresse:a, lat:lt, lng:lg }) => { setAdresse(a); setLat(lt); setLng(lg); }}
+              placeholder="15 avenue de la Gare, 83600 Fréjus"
+              className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-sm text-slate-900 focus:outline-none focus:border-[#2563eb]" />
+            <p style={{ fontSize:'11px', color:'#94A3B8', marginTop:'6px' }}>Tapez pour voir les suggestions — cliquez sur une pour la géolocaliser</p>
             {lat && lng && (
-              <div className="flex items-center gap-2 p-3 bg-forest-50 rounded-xl border border-forest-200">
-                <CheckCircle2 className="w-4 h-4 text-forest-600 flex-shrink-0" />
-                <p className="text-xs font-semibold text-forest-700">Adresse géolocalisée · {lat.toFixed(5)}, {lng.toFixed(5)}</p>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'12px', padding:'10px 14px', background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:'10px' }}>
+                <CheckCircle2 style={{ width:'15px',height:'15px',color:'#10B981',flexShrink:0 }} />
+                <p style={{ fontSize:'12px', fontWeight:600, color:'#065F46' }}>Géolocalisé · {lat.toFixed(5)}, {lng.toFixed(5)}</p>
               </div>
             )}
           </div>
 
-          {/* Horaires journée */}
-          <div className="card p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-violet-600" />
+          {/* Horaires */}
+          <div style={S.card}>
+            <div style={S.hdr}>
+              <div style={S.icon('#EEF2FF')}><Clock style={{ width:'18px',height:'18px',color:'#6366F1' }} /></div>
+              <div><p style={S.title}>Horaires de tournée</p><p style={S.sub}>Début et fin de journée pour le calcul d'itinéraire</p></div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'14px' }}>
+              <div>
+                <label style={S.label}>Départ de chez vous</label>
+                <input type="time" style={S.input} value={heureDebut} onChange={e => setHD(e.target.value)} />
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">Horaires de tournée</h2>
-                <p className="text-xs text-slate-500">Début et fin de journée — utilisés pour le calcul du premier et dernier trajet</p>
+                <label style={S.label}>Retour à la base</label>
+                <input type="time" style={S.input} value={heureFin} onChange={e => setHF(e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">Départ de chez vous</label>
-                <input type="time" className="input" value={heureDebut}
-                  onChange={(e) => setHeureDebut(e.target.value)} />
-                <p className="text-[11px] text-slate-400 mt-1">Heure à laquelle vous partez</p>
-              </div>
-              <div>
-                <label className="label">Retour à la base</label>
-                <input type="time" className="input" value={heureFin}
-                  onChange={(e) => setHeureFin(e.target.value)} />
-                <p className="text-[11px] text-slate-400 mt-1">Heure d'arrivée de retour</p>
-              </div>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-              <p className="text-xs text-blue-700">
-                💡 Le calcul d'itinéraire inclura automatiquement le trajet <strong>départ → 1ère visite</strong> et <strong>dernière visite → retour</strong>.
-              </p>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:'8px', padding:'12px 14px', background:'#EFF6FF', border:'1px solid #DBEAFE', borderRadius:'10px' }}>
+              <Info style={{ width:'14px',height:'14px',color:'#2563EB',flexShrink:0,marginTop:'1px' }} />
+              <p style={{ fontSize:'12px', color:'#1D4ED8', lineHeight:1.6 }}>Le calcul inclut automatiquement le trajet <strong>départ → 1ère visite</strong> et <strong>dernière visite → retour</strong>.</p>
             </div>
           </div>
 
-          {/* Barème km */}
-          <div className="card p-6 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-road-50 flex items-center justify-center">
-                <span className="text-road-600 font-bold text-sm">€</span>
-              </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">Barème kilométrique</h2>
-                <p className="text-xs text-slate-500">Indemnité par kilomètre parcouru</p>
-              </div>
-            </div>
-
-          </div>
-
-                    <button onClick={handleSave} disabled={saving || !lat || !lng}
-            className="btn-road w-full justify-center py-3 text-base font-semibold">
-            {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> Enregistrement…</> : <><CheckCircle2 className="w-5 h-5" /> Enregistrer ma configuration</>}
+          <button onClick={handleSave} disabled={saving || !lat || !lng}
+            style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',width:'100%',padding:'14px',background: (!lat||!lng) ? '#94A3B8' : '#2563EB',color:'#fff',border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:600,cursor: (!lat||!lng) ? 'not-allowed' : 'pointer',boxShadow: (!lat||!lng) ? 'none' : '0 4px 14px rgba(37,99,235,0.3)',marginBottom:'12px' }}>
+            {saving ? <><Loader2 style={{ width:'18px',height:'18px',animation:'spin 0.8s linear infinite' }} /> Enregistrement…</> : <><Save style={{ width:'18px',height:'18px' }} /> Enregistrer</>}
           </button>
 
-          <div className="flex items-start gap-2 p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-base">🔒</span>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Votre adresse et clé API sont stockées de façon sécurisée sur votre base Supabase, protégées par les règles de sécurité (RLS). Elles ne sont jamais partagées.
-            </p>
+          <div style={{ display:'flex',alignItems:'flex-start',gap:'10px',padding:'14px 16px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px' }}>
+            <span style={{ fontSize:'14px' }}>🔒</span>
+            <p style={{ fontSize:'12px', color:'#64748B', lineHeight:1.6 }}>Votre adresse est stockée de façon sécurisée, protégée par les règles Supabase. Elle n'est jamais partagée.</p>
           </div>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </AppShell>
   );

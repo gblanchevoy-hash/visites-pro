@@ -120,7 +120,7 @@ export default function StatistiquesPage() {
         }
       />
 
-      <div className="flex-1 p-4 lg:p-6 space-y-6 overflow-auto">
+      <div style={{ flex:1,padding:"32px",background:"#F8FAFC",overflow:"auto" }}>
         {/* KPI annuels */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -144,7 +144,7 @@ export default function StatistiquesPage() {
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Visites chart */}
-          <div className="card p-5">
+          <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
             <h2 className="font-semibold text-slate-900 mb-4">Visites par mois</h2>
             <div className="flex items-end gap-1 h-40">
               {stats.map((s, i) => (
@@ -160,7 +160,7 @@ export default function StatistiquesPage() {
           </div>
 
           {/* Km chart */}
-          <div className="card p-5">
+          <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
             <h2 className="font-semibold text-slate-900 mb-4">Kilométrage par mois</h2>
             <div className="flex items-end gap-1 h-40">
               {stats.map((s, i) => (
@@ -176,7 +176,7 @@ export default function StatistiquesPage() {
         </div>
 
         {/* Tableau détaillé */}
-        <div className="card overflow-hidden">
+        <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",overflow:"hidden",marginBottom:"16px" }}>
           <div className="px-5 py-4 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900">Tableau mensuel détaillé</h2>
           </div>

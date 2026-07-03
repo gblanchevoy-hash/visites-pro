@@ -3,229 +3,245 @@ import { useEffect, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
-import { toISODate, formatDateLong } from '@/lib/utils/dates';
+import { toISODate } from '@/lib/utils/dates';
 import { RendezVous } from '@/types';
 import Link from 'next/link';
-import { MapPin, Users, Navigation, Clock, ChevronRight, Calendar, TrendingUp, Shield, AlertTriangle } from 'lucide-react';
+import {
+  Navigation, Users, Calendar, MapPin,
+  Clock, ChevronRight, Shield, MoreVertical,
+  TrendingUp
+} from 'lucide-react';
+
+// Decorative dots pattern (top-right background)
+function DecorativeDots() {
+  const dots = [
+    [820, 40], [920, 80], [1060, 44], [1180, 100], [1300, 48],
+    [880, 160], [1100, 176], [1240, 136],
+  ];
+  return (
+    <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden' }}>
+      {dots.map(([x,y], i) => (
+        <div key={i} style={{
+          position:'absolute', left:`${x/14}%`, top:`${y/3}%`,
+          width: i % 3 === 0 ? '8px' : '5px',
+          height: i % 3 === 0 ? '8px' : '5px',
+          borderRadius:'50%', background:'#2563EB',
+          opacity: 0.12 + (i % 3) * 0.06,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+const DAY_NAMES_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const MONTH_NAMES_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function formatDayFull(d: Date) {
+  return `${DAY_NAMES_FR[d.getDay()].toUpperCase()} ${d.getDate()} ${MONTH_NAMES_FR[d.getMonth()].toUpperCase()} ${d.getFullYear()}`;
+}
+
+const VISIT_COLORS = ['#2563EB','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4'];
 
 export default function DashboardPage() {
   const { user, patients, settings } = useAppStore();
   const [todayRdvs, setTodayRdvs] = useState<RendezVous[]>([]);
-  const [weather, setWeather] = useState<{ temp: number; desc: string; icon: string; city: string } | null>(null);
+  const [weather, setWeather] = useState<{ temp: number; desc: string; icon: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const today = new Date();
 
   useEffect(() => {
-    const loadToday = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('rendez_vous')
-        .select('*, patient:patients(*)')
-        .eq('user_id', user.id)
-        .eq('date', toISODate(today))
-        .neq('statut', 'annule')
-        .order('heure_debut');
-      setTodayRdvs((data as unknown as RendezVous[]) ?? []);
-      setLoading(false);
-    };
-    loadToday();
+    if (!user) return;
+    supabase.from('rendez_vous').select('*, patient:patients(*)')
+      .eq('user_id', user.id).eq('date', toISODate(today))
+      .neq('statut', 'annule').order('heure_debut')
+      .then(({ data }) => { setTodayRdvs((data as unknown as RendezVous[]) ?? []); setLoading(false); });
   }, [user]);
 
-  // Fetch weather using Open-Meteo (free, no API key)
   useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        const lat = settings?.adresse_depart_lat ?? 43.7; // default to south france
-        const lng = settings?.adresse_depart_lng ?? 6.0;
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Europe%2FParis`
-        );
-        const data = await res.json();
-        const code = data.current.weathercode;
-        const temp = Math.round(data.current.temperature_2m);
-        const icons: Record<string, string> = {
-          '0': '☀️', '1': '🌤️', '2': '⛅', '3': '☁️',
-          '45': '🌫️', '48': '🌫️', '51': '🌦️', '53': '🌦️', '55': '🌧️',
-          '61': '🌧️', '63': '🌧️', '65': '🌧️', '71': '🌨️', '73': '🌨️',
-          '75': '❄️', '80': '🌦️', '81': '🌧️', '82': '⛈️',
-          '85': '🌨️', '86': '❄️', '95': '⛈️', '96': '⛈️', '99': '⛈️',
-        };
-        const descs: Record<string, string> = {
-          '0': 'Ensoleillé', '1': 'Peu nuageux', '2': 'Partiellement nuageux', '3': 'Couvert',
-          '45': 'Brouillard', '48': 'Brouillard givrant', '51': 'Bruine légère', '53': 'Bruine', '55': 'Bruine forte',
-          '61': 'Pluie légère', '63': 'Pluie', '65': 'Pluie forte', '71': 'Neige légère', '73': 'Neige', '75': 'Neige forte',
-          '80': 'Averses', '81': 'Averses modérées', '82': 'Averses fortes',
-          '85': 'Averses neigeuses', '86': 'Averses neigeuses fortes', '95': 'Orage', '96': 'Orage avec grêle', '99': 'Orage violent',
-        };
-        setWeather({ temp, desc: descs[String(code)] ?? 'Inconnu', icon: icons[String(code)] ?? '🌡️', city: '' });
-      } catch { /* ignore */ }
-    };
-    fetchWeather();
+    const lat = settings?.adresse_depart_lat ?? 43.7;
+    const lng = settings?.adresse_depart_lng ?? 6.0;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Europe%2FParis`)
+      .then(r => r.json()).then(data => {
+        const code = String(data.current.weathercode);
+        const icons: Record<string,string> = {'0':'☀️','1':'🌤️','2':'⛅','3':'☁️','51':'🌦️','61':'🌧️','71':'🌨️','80':'🌦️','95':'⛈️'};
+        const descs: Record<string,string> = {'0':'Ensoleillé','1':'Peu nuageux','2':'Partiellement nuageux','3':'Couvert','51':'Bruine','61':'Pluie','71':'Neige','80':'Averses','95':'Orage'};
+        setWeather({ temp: Math.round(data.current.temperature_2m), desc: descs[code]??'', icon: icons[code]??'🌡️' });
+      }).catch(() => {});
   }, [settings?.adresse_depart_lat]);
 
-  const effectues = todayRdvs.filter((r) => r.statut === 'effectue').length;
-  const aVenir = todayRdvs.filter((r) => r.statut === 'planifie').length;
-  const isConfigured = !!settings?.adresse_depart_lat && !!settings?.ors_api_key;
+  const effectues = todayRdvs.filter(r => r.statut === 'effectue').length;
+  const aVenir    = todayRdvs.filter(r => r.statut === 'planifie').length;
+  const isConfigured = !!settings?.adresse_depart_lat;
+
+  const pseudo = settings?.pseudonyme ?? user?.email?.split('@')[0] ?? '';
+
+  // Quick action cards
+  const quickCards = [
+    { href:'/tournees', label:'Ma tournée',  sub:'du jour',                     icon: Navigation, bg:'#2563EB', iconBg:'#1D4ED8' },
+    { href:'/planning', label:'Planning',     sub:'semaine',                     icon: Calendar,   bg:'#7C3AED', iconBg:'#6D28D9' },
+    { href:'/patients', label:'Patients',     sub:`${patients.length} enregistrés`, icon: Users,  bg:'#059669', iconBg:'#047857' },
+    { href:'/depart',   label:'Mon départ',   sub: isConfigured ? 'Configuré ✓' : 'À configurer', icon: MapPin, bg:'#D97706', iconBg:'#B45309' },
+  ];
 
   return (
     <AppShell>
-      {/* Hero header */}
-      <div className="topbar-gradient px-5 py-6 relative overflow-hidden">
-        {/* Decorative road dots */}
-        <div className="absolute inset-0 road-dots pointer-events-none" style={{ opacity: 0.08 }} />
-        {/* Animated road line SVG */}
-        <svg className="absolute right-0 top-0 h-full opacity-10" width="200" viewBox="0 0 200 100" preserveAspectRatio="none">
-          <path d="M200 0 Q150 50 200 100" stroke="white" strokeWidth="3" fill="none" strokeDasharray="8 6" />
-          <path d="M180 0 Q130 50 180 100" stroke="white" strokeWidth="1.5" fill="none" strokeDasharray="4 8" />
-        </svg>
+      <div style={{ flex:1, overflow:'auto', background:'#F8FAFC', position:'relative' }}>
 
-        {/* Car illustration — truly white, larger */}
-        <img
-          src="/icons/mets_la_gomme_white.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute right-0 bottom-0 pointer-events-none"
-          style={{ height: '130%', maxHeight: '200px', width: 'auto', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
-        />
+        {/* ── Header ── */}
+        <div style={{ position:'relative', padding:'8px 32px 24px', background:'#ffffff', borderBottom:'1px solid #E2E8F0', overflow:'hidden' }}>
+          <DecorativeDots />
+          <div style={{ position:'relative', zIndex:1 }}>
+            <p style={{ fontSize:'12px', fontWeight:500, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'6px' }}>
+              {formatDayFull(today)}
+            </p>
+            <h1 style={{ fontSize:'28px', fontWeight:700, color:'#0F172A', letterSpacing:'-0.5px', marginBottom:'4px' }}>
+              Bonjour {pseudo} !
+            </h1>
+            <p style={{ fontSize:'14px', color:'#64748B', marginBottom:'20px' }}>
+              {todayRdvs.length === 0 ? 'Aucune visite planifiée aujourd\'hui'
+                : `${todayRdvs.length} visite${todayRdvs.length > 1 ? 's' : ''} aujourd'hui`}
+            </p>
 
-        <div className="relative">
-          <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">{formatDateLong(today)}</p>
-          <h1 className="text-2xl font-bold text-white leading-tight">
-            Bonjour {settings?.pseudonyme ?? user?.email?.split('@')[0] ?? ''} !
-          </h1>
-          <p className="text-blue-200 text-sm mt-1">
-            {todayRdvs.length === 0 ? 'Aucune visite planifiée aujourd\'hui'
-              : `${todayRdvs.length} visite${todayRdvs.length > 1 ? 's' : ''} aujourd'hui`}
-          </p>
+            {/* KPI badges */}
+            <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+              {[
+                { icon:'📅', value:`${aVenir} à venir`,       color:'#0F172A' },
+                { icon:'📈', value:`${effectues} effectuées`, color:'#0F172A' },
+                { icon:'👥', value:`${patients.length} patients`, color:'#0F172A' },
+                ...(weather ? [{ icon: weather.icon, value:`${weather.temp}°C ${weather.desc}`, color:'#0F172A' }] : []),
+              ].map((kpi, i) => (
+                <div key={i} style={{
+                  display:'flex', alignItems:'center', gap:'8px',
+                  padding:'8px 16px', background:'#F8FAFC',
+                  border:'1px solid #E2E8F0', borderRadius:'999px',
+                  fontSize:'13px', fontWeight:400, color: kpi.color,
+                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)',
+                }}>
+                  <span style={{ fontSize:'14px' }}>{kpi.icon}</span>
+                  <span>{kpi.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* KPI chips + météo */}
-        <div className="flex gap-3 mt-4 relative flex-wrap">
-          <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-            <Clock className="w-4 h-4 text-blue-200" />
-            <span className="text-white text-sm font-semibold">{aVenir} à venir</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-            <TrendingUp className="w-4 h-4 text-emerald-300" />
-            <span className="text-white text-sm font-semibold">{effectues} effectuées</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-            <Users className="w-4 h-4 text-violet-300" />
-            <span className="text-white text-sm font-semibold">{patients.length} patients</span>
-          </div>
-          {weather && (
-            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-              <span className="text-lg">{weather.icon}</span>
-              <div>
-                <span className="text-white text-sm font-semibold">{weather.temp}°C</span>
-                <span className="text-blue-200 text-xs ml-1.5">{weather.desc}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        {/* ── Content ── */}
+        <div style={{ padding:'32px', maxWidth:'1280px', margin:'0 auto' }}>
 
-      <div className="flex-1 p-4 lg:p-5 space-y-4 overflow-auto">
-        {/* Config alert */}
-        {!isConfigured && (
-          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200">
-            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">Configuration requise</p>
-              <p className="text-xs text-amber-700 mt-0.5">Configurez votre point de départ pour activer le calcul d'itinéraires.</p>
-            </div>
-            <Link href="/depart" className="btn-road text-xs px-3 py-1.5 flex-shrink-0">Configurer</Link>
-          </div>
-        )}
-
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { href: '/tournees', icon: Navigation, label: 'Ma tournée', sub: 'du jour', color: 'from-primary-600 to-primary-500', glow: 'hover:shadow-glow-blue' },
-            { href: '/planning', icon: Calendar, label: 'Planning', sub: 'semaine', color: 'from-violet-600 to-violet-500', glow: '' },
-            { href: '/patients', icon: Users, label: 'Patients', sub: `${patients.length} enregistrés`, color: 'from-emerald-600 to-emerald-500', glow: '' },
-            { href: '/depart', icon: MapPin, label: 'Mon départ', sub: isConfigured ? 'Configuré ✓' : 'À configurer', color: 'from-road-500 to-road-400', glow: 'hover:shadow-glow-road' },
-          ].map(({ href, icon: Icon, label, sub, color, glow }) => (
-            <Link key={href} href={href}
-              className={`card-hover p-4 flex flex-col gap-3 group ${glow}`}>
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}>
-                <Icon className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900 text-sm">{label}</p>
-                <p className="text-xs text-slate-500">{sub}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Today's visits */}
-        <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary-500" />
-              Visites d'aujourd'hui
-            </h2>
-            <Link href="/tournees" className="text-xs text-primary-600 font-medium flex items-center gap-1 hover:gap-2 transition-all">
-              Voir tournée <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
+          {/* Quick action cards — 2 columns */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'24px' }}>
+            {quickCards.map(card => {
+              const Icon = card.icon;
+              return (
+                <Link key={card.href} href={card.href} style={{ textDecoration:'none' }}>
+                  <div style={{
+                    display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'20px 24px', background:'#ffffff',
+                    border:'1px solid #E2E8F0', borderRadius:'16px',
+                    boxShadow:'0 4px 12px rgba(15,23,42,0.04)',
+                    cursor:'pointer', transition:'all 0.15s',
+                    position:'relative', overflow:'hidden',
+                  }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 10px 24px rgba(15,23,42,0.08)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 4px 12px rgba(15,23,42,0.04)'; (e.currentTarget as HTMLDivElement).style.transform = 'none'; }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+                      <div style={{ width:'48px', height:'48px', borderRadius:'14px', background:card.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px ${card.bg}40` }}>
+                        <Icon style={{ width:'22px', height:'22px', color:'#ffffff' }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize:'15px', fontWeight:600, color:'#0F172A', marginBottom:'2px' }}>{card.label}</p>
+                        <p style={{ fontSize:'13px', color:'#64748B' }}>{card.sub}</p>
+                      </div>
+                    </div>
+                    <ChevronRight style={{ width:'20px', height:'20px', color:'#CBD5E1', flexShrink:0 }} />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
 
-          {loading ? (
-            <div className="p-6 flex justify-center">
-              <div className="w-6 h-6 rounded-full border-2 border-primary-200 border-t-primary-600 animate-spin" />
-            </div>
-          ) : todayRdvs.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                <Calendar className="w-6 h-6 text-slate-300" />
+          {/* Today's visits */}
+          <div style={{ background:'#ffffff', border:'1px solid #E2E8F0', borderRadius:'16px', boxShadow:'0 4px 12px rgba(15,23,42,0.04)', overflow:'hidden', marginBottom:'16px' }}>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px', borderBottom:'1px solid #F1F5F9' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <Clock style={{ width:'18px', height:'18px', color:'#2563EB' }} />
+                <span style={{ fontSize:'16px', fontWeight:600, color:'#0F172A' }}>Visites d'aujourd'hui</span>
               </div>
-              <p className="text-sm text-slate-400">Aucune visite planifiée</p>
-              <Link href="/planning" className="text-xs text-primary-600 font-medium mt-2 inline-block">
-                + Planifier une visite
+              <Link href="/tournees" style={{ display:'flex', alignItems:'center', gap:'4px', fontSize:'14px', fontWeight:500, color:'#2563EB', textDecoration:'none' }}>
+                Voir tournée <ChevronRight style={{ width:'16px', height:'16px' }} />
               </Link>
             </div>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {todayRdvs.map((rdv, i) => {
-                const isOccasionnel = !rdv.patient_id;
-                const nomAffiche = isOccasionnel
-                  ? rdv.notes?.match(/\[Occasionnel\] ([^\n·]+)/)?.[1]?.trim() ?? 'Passage rapide'
-                  : `${rdv.patient?.prenom} ${rdv.patient?.nom}`;
-                const statutColors: Record<string, string> = {
-                  planifie: 'bg-blue-100 text-blue-700',
-                  effectue: 'bg-emerald-100 text-emerald-700',
-                  reporte: 'bg-amber-100 text-amber-700',
-                  annule: 'bg-red-100 text-red-700',
-                };
-                return (
-                  <div key={rdv.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                    <div className={`pin text-xs w-7 h-7 ${i % 3 === 0 ? '' : i % 3 === 1 ? 'pin-green' : 'pin-road'}`}>{i + 1}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{nomAffiche}</p>
-                      <p className="text-xs text-slate-500">{rdv.heure_debut} — {rdv.heure_fin}
-                        {rdv.patient?.ville ? ` · ${rdv.patient.ville}` : ''}
-                      </p>
-                    </div>
-                    <span className={`badge text-[10px] ${statutColors[rdv.statut] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {rdv.statut}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
-        {/* Security info */}
-        <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-          <Shield className="w-5 h-5 text-forest-600 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-slate-700">Données sécurisées</p>
-            <p className="text-[11px] text-slate-500">Vos données patients sont chiffrées et isolées — seul votre compte y a accès.</p>
+            {/* List */}
+            {loading ? (
+              <div style={{ padding:'40px', display:'flex', justifyContent:'center' }}>
+                <div style={{ width:'24px', height:'24px', borderRadius:'50%', border:'2px solid #DBEAFE', borderTop:'2px solid #2563EB', animation:'spin 0.8s linear infinite' }} />
+              </div>
+            ) : todayRdvs.length === 0 ? (
+              <div style={{ padding:'48px 24px', textAlign:'center' }}>
+                <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                  <Calendar style={{ width:'22px', height:'22px', color:'#CBD5E1' }} />
+                </div>
+                <p style={{ fontSize:'14px', color:'#94A3B8', marginBottom:'8px' }}>Aucune visite planifiée</p>
+                <Link href="/planning" style={{ fontSize:'13px', color:'#2563EB', fontWeight:500, textDecoration:'none' }}>+ Planifier une visite</Link>
+              </div>
+            ) : (
+              <div>
+                {todayRdvs.map((rdv, i) => {
+                  const isOcc = !rdv.patient_id;
+                  const nom = isOcc
+                    ? rdv.notes?.match(/\[Occasionnel\] ([^\n·]+)/)?.[1]?.trim() ?? 'Passage rapide'
+                    : `${rdv.patient?.prenom ?? ''} ${rdv.patient?.nom ?? ''}`.trim();
+                  const ville = rdv.patient?.ville ?? '';
+                  const color = VISIT_COLORS[i % VISIT_COLORS.length];
+                  const statutLabel: Record<string,string> = { planifie:'Planifiée', effectue:'Effectuée', reporte:'Reportée', annule:'Annulée' };
+                  const statutBg: Record<string,string> = { planifie:'#EFF6FF', effectue:'#F0FDF4', reporte:'#FFFBEB', annule:'#FEF2F2' };
+                  const statutColor: Record<string,string> = { planifie:'#2563EB', effectue:'#059669', reporte:'#D97706', annule:'#DC2626' };
+                  return (
+                    <div key={rdv.id} style={{ display:'flex', alignItems:'center', gap:'16px', padding:'0 24px', height:'64px', borderBottom:'1px solid #F1F5F9' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F8FAFC')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      {/* Number circle */}
+                      <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span style={{ fontSize:'13px', fontWeight:600, color:'#ffffff' }}>{i+1}</span>
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontSize:'14px', fontWeight:600, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nom}</p>
+                        <p style={{ fontSize:'13px', color:'#64748B' }}>{rdv.heure_debut} — {rdv.heure_fin}{ville ? ` · ${ville}` : ''}</p>
+                      </div>
+                      {/* Status badge */}
+                      <div style={{ display:'flex', alignItems:'center', gap:'12px', flexShrink:0 }}>
+                        <span style={{ padding:'4px 12px', borderRadius:'999px', background: statutBg[rdv.statut]??'#F1F5F9', color: statutColor[rdv.statut]??'#64748B', fontSize:'12px', fontWeight:500 }}>
+                          {statutLabel[rdv.statut] ?? rdv.statut}
+                        </span>
+                        <MoreVertical style={{ width:'16px', height:'16px', color:'#CBD5E1', cursor:'pointer' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Security banner */}
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'20px 24px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'16px' }}>
+            <Shield style={{ width:'20px', height:'20px', color:'#10B981', flexShrink:0 }} />
+            <div>
+              <p style={{ fontSize:'14px', fontWeight:600, color:'#0F172A', marginBottom:'2px' }}>Données sécurisées</p>
+              <p style={{ fontSize:'13px', color:'#64748B' }}>Vos données patients sont chiffrées et isolées — seul votre compte y a accès.</p>
+            </div>
+            <div style={{ marginLeft:'auto', flexShrink:0, opacity:0.15 }}>
+              <Shield style={{ width:'40px', height:'40px', color:'#64748B' }} />
+            </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </AppShell>
   );
 }

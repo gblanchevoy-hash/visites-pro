@@ -139,19 +139,19 @@ export default function FraisPage() {
         }
       />
 
-      <div className="flex-1 p-4 lg:p-6 space-y-5 overflow-auto">
+      <div style={{ flex:1,padding:"32px",background:"#F8FAFC",overflow:"auto" }}>
         {/* KPI */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total km {selectedYear}</p>
+        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"16px",marginBottom:"16px" }}>
+          <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
+            <p style={{ fontSize:"11px",fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em" }}>Total km {selectedYear}</p>
             <p className="text-3xl font-bold text-slate-900 mt-1">{totalKm.toFixed(0)} <span className="text-base font-normal text-slate-400">km</span></p>
           </div>
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Indemnités {selectedYear}</p>
+          <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
+            <p style={{ fontSize:"11px",fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em" }}>Indemnités {selectedYear}</p>
             <p className="text-3xl font-bold text-emerald-600 mt-1">{totalAnnee.toFixed(2)} <span className="text-base font-normal text-emerald-400">€</span></p>
           </div>
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mois saisis</p>
+          <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",padding:"20px" }}>
+            <p style={{ fontSize:"11px",fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.06em" }}>Mois saisis</p>
             <p className="text-3xl font-bold text-slate-900 mt-1">{entries.length} <span className="text-base font-normal text-slate-400">/ 12</span></p>
             <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
               <div className="bg-primary-500 h-1.5 rounded-full transition-all" style={{ width: `${(entries.length/12)*100}%` }} />
@@ -161,7 +161,7 @@ export default function FraisPage() {
 
         {/* Edit form */}
         {editMois !== null && (
-          <div className="card p-5 animate-slide-in border-primary-200 bg-primary-50/30">
+          <div style={{ background:"#EFF6FF",border:"1.5px solid #DBEAFE",borderRadius:"16px",padding:"20px",marginBottom:"16px" }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-slate-900">{MOIS_NOMS[editMois-1]} {selectedYear}</h3>
               <button onClick={() => setEditMois(null)} className="text-slate-400 hover:text-slate-600 text-sm">✕ Fermer</button>
@@ -169,24 +169,24 @@ export default function FraisPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Kilomètres parcourus</label>
-                  <input type="number" step="0.1" className="input" required placeholder="ex: 1250.5"
+                  <label style={{ display:"block",fontSize:"12px",fontWeight:600,color:"#374151",marginBottom:"6px" }}>Kilomètres parcourus</label>
+                  <input type="number" step="0.1" style={{ width:"100%",padding:"11px 14px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:"10px",fontSize:"14px",color:"#0F172A",outline:"none",fontFamily:"inherit",boxSizing:"border-box" as "border-box" }} required placeholder="ex: 1250.5"
                     value={editKm} onChange={e => setEditKm(e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Barème (€/km)</label>
-                  <input type="number" step="0.001" className="input" required
+                  <label style={{ display:"block",fontSize:"12px",fontWeight:600,color:"#374151",marginBottom:"6px" }}>Barème (€/km)</label>
+                  <input type="number" step="0.001" style={{ width:"100%",padding:"11px 14px",background:"#F8FAFC",border:"1.5px solid #E2E8F0",borderRadius:"10px",fontSize:"14px",color:"#0F172A",outline:"none",fontFamily:"inherit",boxSizing:"border-box" as "border-box" }} required
                     value={editBareme} onChange={e => setEditBareme(e.target.value)} />
                 </div>
               </div>
               {editKm && editBareme && (
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-sm text-emerald-700 font-semibold">
+                <div style={{ padding:"12px 14px",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:"10px",fontSize:"13px",color:"#065F46",fontWeight:600 }}>
                   Indemnité estimée : {(parseFloat(editKm||'0') * parseFloat(editBareme||'0')).toFixed(2)} €
                 </div>
               )}
               <div className="flex gap-3">
-                <button type="button" onClick={() => setEditMois(null)} className="btn-secondary">Annuler</button>
-                <button type="submit" className="btn-primary" disabled={loading}>
+                <button type="button" onClick={() => setEditMois(null)} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"10px 20px",background:"#F8FAFC",color:"#374151",border:"1.5px solid #E2E8F0",borderRadius:"10px",fontSize:"14px",fontWeight:500,cursor:"pointer" }}>Annuler</button>
+                <button type="submit" style={{ display:"flex",alignItems:"center",gap:"6px",padding:"10px 20px",background:"#2563EB",color:"#fff",border:"none",borderRadius:"10px",fontSize:"14px",fontWeight:600,cursor:"pointer" }} disabled={loading}>
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement…</> : <><CheckCircle2 className="w-4 h-4" /> Enregistrer</>}
                 </button>
               </div>
@@ -195,7 +195,7 @@ export default function FraisPage() {
         )}
 
         {/* Monthly table */}
-        <div className="card overflow-hidden">
+        <div style={{ background:"#fff",border:"1px solid #E2E8F0",borderRadius:"16px",boxShadow:"0 4px 12px rgba(15,23,42,0.04)",overflow:"hidden",marginBottom:"16px" }}>
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="font-semibold text-slate-900">Détail mensuel {selectedYear}</h2>
             <p className="text-xs text-slate-400">Cliquez sur un mois pour saisir ou modifier · 🔄 pour calculer automatiquement depuis vos tournées</p>
@@ -258,7 +258,7 @@ export default function FraisPage() {
           </table>
         </div>
 
-        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-xs text-blue-700">
+        <div style={{ padding:"14px 16px",background:"#EFF6FF",border:"1px solid #DBEAFE",borderRadius:"12px",fontSize:"12px",color:"#1D4ED8",lineHeight:1.6 }}>
           💡 <strong>Calcul automatique</strong> : cliquez sur 🔄 à côté d'un mois pour calculer les km directement depuis vos tournées planifiées. Les adresses doivent être géolocalisées pour que le calcul fonctionne.
         </div>
       </div>
