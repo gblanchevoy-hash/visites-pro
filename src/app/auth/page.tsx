@@ -95,14 +95,7 @@ function AuthInner() {
            COUCHE 2 — SVG ITINÉRAIRE
            Chemin organique avec courbes S
         ════════════════════════════════════════ */
-        .layer-route {
-          position: absolute;
-          left: 28%; top: 5%;
-          width: 50%; height: 90%;
-          z-index: 6;
-          pointer-events: none;
-          filter: drop-shadow(0 0 16px rgba(96,165,250,.40));
-        }
+
 
         /* ════════════════════════════════════════
            COUCHE 3 — HALOS LUMINEUX
@@ -151,45 +144,7 @@ function AuthInner() {
            COUCHE 4 — MARQUEURS GPS
            3 couches par marqueur : icône + anneau + halo
         ════════════════════════════════════════ */
-        .gps-marker {
-          position: absolute;
-          z-index: 7;
-          pointer-events: none;
-          display: flex; align-items: center; justify-content: center;
-          transform: translate(-50%, -50%);
-        }
-        .gps-halo {
-          position: absolute;
-          width: 64px; height: 64px;
-          border-radius: 50%;
-          background: rgba(91,142,255,.18);
-          filter: blur(16px);
-        }
-        .gps-ring {
-          position: absolute;
-          width: 48px; height: 48px;
-          border-radius: 50%;
-          border: 2px solid rgba(91,142,255,.45);
-          box-shadow: 0 0 20px rgba(91,142,255,.25);
-        }
-        .gps-pin {
-          position: relative;
-          width: 36px; height: 36px;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
-          background: #5B8EFF;
-          box-shadow: 0 4px 18px rgba(91,142,255,.40);
-          display: flex; align-items: center; justify-content: center;
-        }
-        .gps-pin::after {
-          content: '';
-          position: absolute;
-          width: 12px; height: 12px;
-          border-radius: 50%;
-          background: white;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%) rotate(45deg);
-        }
+
 
         /* ════════════════════════════════════════
            COUCHE 5 — LAYOUT & CONTENU
@@ -406,26 +361,9 @@ function AuthInner() {
       <div className="auth-root">
 
         {/* ════ COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE ════ */}
-        {/* Couche 1 — Formes abstraites très douces, pas de grille */}
-        <svg className="layer-map" viewBox="0 0 400 700" fill="none">
-          <ellipse cx="200" cy="200" rx="160" ry="120" fill="#CBD5E1" opacity="0.3"/>
-          <ellipse cx="280" cy="420" rx="100" ry="80" fill="#CBD5E1" opacity="0.2"/>
-          <ellipse cx="120" cy="560" rx="130" ry="90" fill="#CBD5E1" opacity="0.2"/>
-          <circle cx="300" cy="150" r="50" fill="#CBD5E1" opacity="0.15"/>
-          <circle cx="80" cy="350" r="70" fill="#CBD5E1" opacity="0.12"/>
-        </svg>
 
-        {/* ════ COUCHE 2 — SVG ITINÉRAIRE ════ */}
-        <svg className="layer-route" viewBox="0 0 500 800" fill="none" preserveAspectRatio="none">
-          <path
-            d="M20 40 C160 10 250 90 340 120 S520 240 480 360 S280 520 420 640 S760 760 720 880"
-            stroke="#60A5FA"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeDasharray="10 7"
-            opacity=".65"
-          />
-        </svg>
+
+
 
         {/* ════ COUCHE 3 — HALOS LUMINEUX ════ */}
         <div className="halo-main" />
@@ -482,6 +420,56 @@ function AuthInner() {
                 Planification, cartographie et kilométrage optimisés<br/>
                 pour les professionnels de santé.
               </p>
+
+              {/* ── Tracé itinéraire inline dans la colonne gauche ── */}
+              <div style={{ position:'relative', width:'100%', height:'160px', marginBottom:'32px' }}>
+                {/* Carte très discrète en fond */}
+                <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0.06 }} viewBox="0 0 600 160" fill="none">
+                  <rect x="20" y="20" width="80" height="50" rx="4" fill="#94A3B8"/>
+                  <rect x="130" y="30" width="100" height="40" rx="4" fill="#94A3B8"/>
+                  <rect x="260" y="15" width="70" height="55" rx="4" fill="#94A3B8"/>
+                  <rect x="360" y="25" width="90" height="45" rx="4" fill="#94A3B8"/>
+                  <rect x="480" y="10" width="80" height="60" rx="4" fill="#94A3B8"/>
+                  <line x1="0" y1="80" x2="600" y2="80" stroke="#94A3B8" strokeWidth="1"/>
+                  <line x1="110" y1="0" x2="110" y2="160" stroke="#94A3B8" strokeWidth="1"/>
+                  <line x1="240" y1="0" x2="240" y2="160" stroke="#94A3B8" strokeWidth="1"/>
+                  <line x1="360" y1="0" x2="360" y2="160" stroke="#94A3B8" strokeWidth="1"/>
+                  <line x1="480" y1="0" x2="480" y2="160" stroke="#94A3B8" strokeWidth="1"/>
+                </svg>
+                {/* Tracé route en pointillés */}
+                <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', filter:'drop-shadow(0 0 8px rgba(96,165,250,0.35))' }} viewBox="0 0 600 160" fill="none" preserveAspectRatio="none">
+                  <path
+                    d="M 20 140 C 80 130 100 60 160 55 C 220 50 250 100 310 80 C 370 60 390 30 460 25 C 510 22 540 40 580 30"
+                    stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="10 7" opacity="0.7"
+                  />
+                </svg>
+                {/* Marqueur 1 — point de départ bas-gauche */}
+                <div style={{ position:'absolute', left:'26%', top:'50%', transform:'translate(-50%,-50%)' }}>
+                  <div style={{ position:'absolute', width:'48px', height:'48px', borderRadius:'50%', background:'rgba(91,142,255,0.15)', filter:'blur(10px)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
+                  <div style={{ position:'relative', width:'22px', height:'22px', borderRadius:'50%', border:'2px solid rgba(91,142,255,0.5)', background:'rgba(219,234,254,0.8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 16px rgba(91,142,255,0.3)' }}>
+                    <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#5B8EFF' }} />
+                  </div>
+                </div>
+                {/* Marqueur 2 — milieu */}
+                <div style={{ position:'absolute', left:'52%', top:'38%', transform:'translate(-50%,-50%)' }}>
+                  <div style={{ position:'absolute', width:'48px', height:'48px', borderRadius:'50%', background:'rgba(91,142,255,0.15)', filter:'blur(10px)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
+                  <div style={{ position:'relative', width:'22px', height:'22px', borderRadius:'50%', border:'2px solid rgba(91,142,255,0.5)', background:'rgba(219,234,254,0.8)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 16px rgba(91,142,255,0.3)' }}>
+                    <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#5B8EFF' }} />
+                  </div>
+                </div>
+                {/* Marqueur 3 — destination haut-droite (pin GPS) */}
+                <div style={{ position:'absolute', left:'79%', top:'10%', transform:'translate(-50%,0)' }}>
+                  <div style={{ position:'absolute', width:'60px', height:'60px', borderRadius:'50%', background:'rgba(91,142,255,0.18)', filter:'blur(16px)', top:'50%', left:'50%', transform:'translate(-50%,-40%)' }} />
+                  <div style={{ position:'relative' }}>
+                    <svg width="32" height="40" viewBox="0 0 32 40" fill="none">
+                      <path d="M16 0C7.163 0 0 7.163 0 16C0 24.837 16 40 16 40C16 40 32 24.837 32 16C32 7.163 24.837 0 16 0Z" fill="#5B8EFF"/>
+                      <circle cx="16" cy="16" r="7" fill="white"/>
+                      <circle cx="16" cy="16" r="4" fill="#5B8EFF"/>
+                    </svg>
+                    <div style={{ width:'16px', height:'6px', borderRadius:'50%', background:'rgba(91,142,255,0.3)', margin:'2px auto 0', filter:'blur(3px)' }} />
+                  </div>
+                </div>
+              </div>
 
               <div className="cards">
                 {[
