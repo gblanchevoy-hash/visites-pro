@@ -250,7 +250,7 @@ export default function RapportFiscalPage() {
             <div style={{ padding:'20px', background:'#EFF6FF', border:'1px solid #DBEAFE', borderRadius:'12px' }}>
               <p style={{ fontSize:'12px', fontWeight:700, color:'#1D4ED8', marginBottom:'8px' }}>💡 Conseil</p>
               <p style={{ fontSize:'12px', color:'#1E40AF', lineHeight:1.6 }}>
-                Conservez ce document avec vos justificatifs de déplacement (agenda professionnel, carnet de bord) pendant 3 ans. En cas de contrôle fiscal, l'application Itilib conserve l'historique de vos tournées à titre de preuve complémentaire.
+                Conservez ce document imprimé avec vos justificatifs (agenda, carnet de bord) pendant 3 ans minimum. Vos données (tournées, RDV, frais) restent accessibles dans Itilib tant que votre compte est actif — pensez à exporter régulièrement vos données via la page Exports.
               </p>
             </div>
           </div>
