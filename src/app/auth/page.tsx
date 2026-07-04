@@ -8,15 +8,13 @@ function AuthInner() {
   const router = useRouter();
   const params = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
-  const [email, setEmail]       = useState('');
+  const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
   const [pseudonyme, setPseudo] = useState('');
   const [showPwd, setShowPwd]   = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [mounted, setMounted]   = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (params.get('reason') === 'inactivity')
       toast('Déconnecté pour inactivité', { icon: '🔒' });
   }, []);
@@ -62,435 +60,527 @@ function AuthInner() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         html, body { height: 100%; overflow: hidden; }
 
-        .auth-page {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        /* ════════════════════════════════════════
+           COUCHE 0 — FOND MULTI-RADIAL
+        ════════════════════════════════════════ */
+        .auth-root {
+          font-family: 'Inter', -apple-system, sans-serif;
           width: 100vw; height: 100vh; overflow: hidden;
-          background: #FCFCFD;
           position: relative;
+          background:
+            radial-gradient(circle at 65% 50%, rgba(219,234,254,.55), transparent 40%),
+            radial-gradient(circle at 15% 20%, rgba(96,165,250,.05), transparent 35%),
+            linear-gradient(180deg, #FFFFFF, #FCFCFD);
+        }
+
+        /* ════════════════════════════════════════
+           COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE
+           Très discrète, jamais lisible
+        ════════════════════════════════════════ */
+        .layer-map {
+          position: absolute;
+          left: 38%; top: 8%;
+          width: 44%; height: 84%;
+          z-index: 1;
+          opacity: 0.05;
+          filter: blur(2px);
+          pointer-events: none;
+        }
+
+        /* ════════════════════════════════════════
+           COUCHE 2 — SVG ITINÉRAIRE
+           Chemin organique avec courbes S
+        ════════════════════════════════════════ */
+        .layer-route {
+          position: absolute;
+          left: 38%; top: 12%;
+          width: 42%; height: 76%;
+          z-index: 2;
+          pointer-events: none;
+          filter: drop-shadow(0 0 12px rgba(96,165,250,.25));
+        }
+
+        /* ════════════════════════════════════════
+           COUCHE 3 — HALOS LUMINEUX
+           Derrière la carte de connexion
+        ════════════════════════════════════════ */
+        .halo-main {
+          position: absolute;
+          right: -120px; top: 50%;
+          transform: translateY(-50%);
+          width: 950px; height: 950px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle,
+            rgba(59,130,246,.22) 0%,
+            rgba(96,165,250,.14) 25%,
+            rgba(147,197,253,.08) 50%,
+            rgba(255,255,255,0) 75%
+          );
+          filter: blur(80px);
+          opacity: 0.95;
+          z-index: 3;
+          pointer-events: none;
+        }
+        .halo-mid {
+          position: absolute;
+          right: 50px; top: 45%;
+          width: 600px; height: 600px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(37,99,235,.18), transparent 72%);
+          filter: blur(120px);
+          z-index: 3;
+          pointer-events: none;
+        }
+        .halo-soft {
+          position: absolute;
+          right: 0; top: 20%;
+          width: 800px; height: 700px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(219,234,254,.45), transparent);
+          filter: blur(160px);
+          z-index: 3;
+          pointer-events: none;
+        }
+
+        /* ════════════════════════════════════════
+           COUCHE 4 — MARQUEURS GPS
+           3 couches par marqueur : icône + anneau + halo
+        ════════════════════════════════════════ */
+        .gps-marker {
+          position: absolute;
+          z-index: 4;
+          pointer-events: none;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .gps-halo {
+          position: absolute;
+          width: 64px; height: 64px;
+          border-radius: 50%;
+          background: rgba(91,142,255,.18);
+          filter: blur(16px);
+        }
+        .gps-ring {
+          position: absolute;
+          width: 48px; height: 48px;
+          border-radius: 50%;
+          border: 2px solid rgba(91,142,255,.45);
+          box-shadow: 0 0 20px rgba(91,142,255,.25);
+        }
+        .gps-pin {
+          position: relative;
+          width: 36px; height: 36px;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          background: #5B8EFF;
+          box-shadow: 0 4px 18px rgba(91,142,255,.40);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .gps-pin::after {
+          content: '';
+          position: absolute;
+          width: 12px; height: 12px;
+          border-radius: 50%;
+          background: white;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        /* ════════════════════════════════════════
+           COUCHE 5 — LAYOUT & CONTENU
+        ════════════════════════════════════════ */
+        .layout {
+          position: relative; z-index: 10;
+          width: 100%; height: 100%;
           display: flex; flex-direction: column;
         }
 
-        /* ── Background layers ── */
-        .bg-halo-main {
-          position: absolute; pointer-events: none;
-          width: 1000px; height: 800px;
-          border-radius: 50%;
-          background: radial-gradient(ellipse at center, #DBEAFE 0%, transparent 70%);
-          opacity: 0.08;
-          filter: blur(150px);
-          top: 50%; left: 55%; transform: translate(-40%, -50%);
-          z-index: 0;
-        }
-        .bg-halo-top {
-          position: absolute; pointer-events: none;
-          width: 600px; height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(ellipse at center, #BFDBFE 0%, transparent 70%);
-          opacity: 0.04;
-          filter: blur(120px);
-          top: -100px; right: 100px;
-          z-index: 0;
-        }
-        .bg-halo-bottom {
-          position: absolute; pointer-events: none;
-          width: 700px; height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(ellipse at center, #E0E7FF 0%, transparent 70%);
-          opacity: 0.05;
-          filter: blur(140px);
-          bottom: -80px; left: 0;
-          z-index: 0;
-        }
-
-        /* ── Road SVG ── */
-        .bg-road {
-          position: absolute; inset: 0; pointer-events: none; z-index: 0;
-        }
-
-        /* ── Logo ── */
+        /* Logo */
         .logo {
           position: absolute;
           top: 48px; left: 56px;
           display: flex; align-items: center; gap: 12px;
-          z-index: 10;
-          opacity: 0; animation: fadeUp 500ms ease forwards;
+          animation: fadeUp 500ms ease both;
         }
-        .logo-icon {
-          width: 40px; height: 40px;
-          border-radius: 12px;
+        .logo-mark {
+          width: 40px; height: 40px; border-radius: 12px;
           background: #2563EB;
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 4px 14px rgba(37,99,235,.30);
           flex-shrink: 0;
         }
-        .logo-name { font-size: 18px; font-weight: 800; color: #0F172A; letter-spacing: -0.3px; line-height: 1; }
-        .logo-sub  { font-size: 12px; color: #94A3B8; margin-top: 2px; }
+        .logo-text-name { font-size: 17px; font-weight: 800; color: #0F172A; letter-spacing: -0.3px; line-height: 1; }
+        .logo-text-sub  { font-size: 11px; color: #94A3B8; margin-top: 2px; }
 
-        /* ── Main grid ── */
-        .main-grid {
-          flex: 1; display: grid;
-          grid-template-columns: 58fr 42fr;
-          padding: 0 80px 0 64px;
+        /* Grid */
+        .grid {
+          flex: 1;
+          display: grid;
+          grid-template-columns: 58% 42%;
+          padding: 80px 72px 40px 64px;
           align-items: center;
           gap: 0;
-          position: relative; z-index: 1;
-          max-width: 1500px; width: 100%; margin: 0 auto;
         }
 
-        /* ── Left column ── */
-        .col-left {
-          padding-right: 80px;
-          display: flex; flex-direction: column;
-        }
+        /* Left */
+        .col-left { padding-right: 72px; display: flex; flex-direction: column; gap: 0; }
 
         .badge {
           display: inline-flex; align-items: center;
           height: 40px; padding: 0 20px;
           border-radius: 999px;
           background: #EFF6FF;
-          border: 1px solid #BFDBFE;
-          font-size: 14px; font-weight: 600;
-          letter-spacing: 0.08em;
-          color: #2563EB;
+          border: 1px solid rgba(191,219,254,.8);
+          font-size: 13px; font-weight: 600;
+          letter-spacing: 0.08em; color: #2563EB;
           text-transform: uppercase;
           width: fit-content;
-          margin-bottom: 32px;
-          opacity: 0; animation: fadeUp 500ms ease 80ms forwards;
+          margin-bottom: 28px;
+          animation: fadeUp 500ms 80ms ease both;
         }
 
         .headline {
-          max-width: 620px;
-          font-size: 68px; font-weight: 900;
-          line-height: 74px;
-          letter-spacing: -2px;
-          margin-bottom: 24px;
-          opacity: 0; animation: fadeUp 500ms ease 120ms forwards;
+          font-size: 66px; font-weight: 900;
+          line-height: 72px; letter-spacing: -2.5px;
+          margin-bottom: 22px;
+          animation: fadeUp 500ms 120ms ease both;
         }
-        .headline-line1 { color: #0F172A; display: block; }
-        .headline-line2 { color: #2563EB; display: block; }
+        .headline-l1 { display: block; color: #0F172A; }
+        .headline-l2 { display: block; color: #2563EB; }
 
-        .description {
-          max-width: 560px;
-          font-size: 19px; font-weight: 400;
+        .desc {
+          font-size: 18px; font-weight: 400;
           line-height: 1.6; color: #64748B;
-          margin-bottom: 48px;
-          opacity: 0; animation: fadeUp 500ms ease 160ms forwards;
+          max-width: 520px;
+          margin-bottom: 44px;
+          animation: fadeUp 500ms 160ms ease both;
         }
 
-        /* ── Feature cards ── */
-        .cards-row {
-          display: flex; gap: 20px;
-        }
-
-        .feat-card {
-          width: 220px; height: 200px;
+        /* Feature cards */
+        .cards { display: flex; gap: 20px; }
+        .card {
+          flex: 1;
           border-radius: 28px;
           background: #FFFFFF;
           border: 1px solid #F1F5F9;
-          box-shadow: 0 24px 60px rgba(15,23,42,.05);
-          padding: 28px 24px;
+          box-shadow: 0 30px 90px rgba(15,23,42,.06);
+          padding: 26px 22px;
           display: flex; flex-direction: column;
           cursor: default;
           transition: transform 250ms ease, box-shadow 250ms ease;
-          opacity: 0;
         }
-        .feat-card:nth-child(1) { animation: fadeUp 500ms ease 200ms forwards; }
-        .feat-card:nth-child(2) { animation: fadeUp 500ms ease 280ms forwards; }
-        .feat-card:nth-child(3) { animation: fadeUp 500ms ease 360ms forwards; }
-        .feat-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 32px 80px rgba(15,23,42,.10);
-        }
-        .feat-icon {
+        .card:nth-child(1) { animation: fadeUp 500ms 200ms ease both; }
+        .card:nth-child(2) { animation: fadeUp 500ms 280ms ease both; }
+        .card:nth-child(3) { animation: fadeUp 500ms 360ms ease both; }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 40px 100px rgba(15,23,42,.10); }
+        .card-icon {
           width: 56px; height: 56px; border-radius: 16px;
           background: #EFF6FF;
           display: flex; align-items: center; justify-content: center;
-          margin-bottom: 20px; flex-shrink: 0;
+          margin-bottom: 18px; flex-shrink: 0;
         }
-        .feat-title { font-size: 15px; font-weight: 700; color: #0F172A; margin-bottom: 8px; line-height: 1.3; }
-        .feat-desc  { font-size: 13px; font-weight: 400; color: #64748B; line-height: 1.5; }
+        .card-title { font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 7px; line-height: 1.3; }
+        .card-desc  { font-size: 13px; color: #64748B; line-height: 1.5; }
 
-        /* ── Login card ── */
-        .col-right {
-          display: flex; align-items: center; justify-content: center;
-        }
+        /* Right */
+        .col-right { display: flex; align-items: center; justify-content: center; }
 
-        .login-card {
-          width: 480px;
+        /* ════════════════════════════════════════
+           COUCHE 6 — FORMULAIRE
+           La carte flotte grâce aux ombres
+        ════════════════════════════════════════ */
+        .form-card {
+          width: 460px;
           border-radius: 36px;
           background: #FFFFFF;
           border: 1px solid rgba(255,255,255,.65);
-          box-shadow: 0 40px 90px rgba(15,23,42,.10);
-          padding: 48px;
-          opacity: 0; animation: fadeUp 500ms ease 120ms forwards;
+          box-shadow: 0 45px 120px rgba(15,23,42,.10), 0 8px 32px rgba(15,23,42,.04);
+          padding: 44px 40px;
+          animation: fadeUp 500ms 120ms ease both;
         }
 
-        .form-title { font-size: 40px; font-weight: 900; color: #0F172A; letter-spacing: -1px; margin-bottom: 6px; }
-        .form-sub   { font-size: 17px; font-weight: 400; color: #94A3B8; margin-bottom: 36px; }
+        .form-h1  { font-size: 38px; font-weight: 900; color: #0F172A; letter-spacing: -1px; margin-bottom: 5px; }
+        .form-sub { font-size: 16px; color: #94A3B8; margin-bottom: 32px; }
 
-        .field { margin-bottom: 16px; }
-        .field-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; }
-        .field-wrap { position: relative; }
-        .field-icon {
-          position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
-          width: 20px; height: 20px; color: #94A3B8; pointer-events: none;
+        .field       { margin-bottom: 14px; }
+        .field-label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 7px; }
+        .field-wrap  { position: relative; }
+        .field-icon  {
+          position: absolute; left: 18px; top: 50%;
+          transform: translateY(-50%);
+          color: #94A3B8; pointer-events: none;
+          display: flex; align-items: center;
         }
         .field-input {
-          width: 100%; height: 64px;
+          width: 100%; height: 62px;
           border-radius: 16px;
           background: #F8FAFC;
           border: 1.5px solid #E2E8F0;
-          padding: 0 20px 0 52px;
-          font-size: 16px; font-family: inherit; color: #0F172A;
-          outline: none; transition: border-color 200ms, box-shadow 200ms;
+          padding: 0 18px 0 50px;
+          font-size: 15px; font-family: inherit; color: #0F172A;
+          outline: none;
+          transition: border-color 200ms, box-shadow 200ms;
         }
         .field-input::placeholder { color: #94A3B8; }
         .field-input:focus {
           border-color: #2563EB;
           box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+          background: #FFFFFF;
         }
         .field-eye {
-          position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
           background: none; border: none; cursor: pointer;
           color: #94A3B8; display: flex; align-items: center;
           transition: color 150ms;
         }
         .field-eye:hover { color: #475569; }
 
-        .btn-submit {
-          width: 100%; height: 64px;
+        .btn-primary {
+          width: 100%; height: 62px;
           border-radius: 16px;
           background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
           border: none; color: #FFFFFF;
-          font-size: 17px; font-weight: 700; font-family: inherit;
+          font-size: 16px; font-weight: 700; font-family: inherit;
           cursor: pointer;
           display: flex; align-items: center; justify-content: center; gap: 10px;
-          box-shadow: 0 8px 24px rgba(37,99,235,.30);
+          box-shadow: 0 8px 28px rgba(37,99,235,.32);
           transition: transform 250ms ease, box-shadow 250ms ease, opacity 250ms;
-          margin-top: 8px;
-          letter-spacing: -0.2px;
+          margin-top: 6px; letter-spacing: -0.2px;
         }
-        .btn-submit:hover:not(:disabled) {
+        .btn-primary:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(37,99,235,.40);
-          opacity: 0.95;
+          box-shadow: 0 14px 36px rgba(37,99,235,.42);
+          opacity: .97;
         }
-        .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+        .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
 
-        .form-links { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
-        .link-btn {
+        .form-links { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
+        .lnk {
           background: none; border: none; font-family: inherit;
-          font-size: 15px; font-weight: 500; color: #2563EB; cursor: pointer;
-          transition: opacity 150ms;
+          font-size: 14px; font-weight: 500; color: #2563EB;
+          cursor: pointer; transition: opacity 150ms;
         }
-        .link-btn:hover { opacity: 0.75; }
-        .link-secondary { font-size: 15px; color: #94A3B8; }
-        .link-secondary .link-btn { font-size: 15px; }
+        .lnk:hover { opacity: .72; }
+        .lnk-muted { font-size: 14px; color: #94A3B8; }
+        .lnk-muted .lnk { font-size: 14px; }
 
-        /* ── Footer ── */
+        /* Footer */
         .footer {
           position: relative; z-index: 10;
           display: flex; justify-content: space-between; align-items: center;
-          padding: 0 64px 24px;
+          padding: 0 64px 22px;
         }
-        .footer p, .footer a { font-size: 14px; color: #94A3B8; text-decoration: none; }
+        .footer span, .footer a { font-size: 14px; color: #94A3B8; text-decoration: none; }
         .footer-links { display: flex; gap: 28px; }
         .footer a:hover { color: #64748B; }
 
-        /* ── Animations ── */
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Responsive ── */
         @media (max-width: 1199px) {
-          .headline { font-size: 52px; line-height: 58px; }
-          .description { font-size: 17px; }
-          .main-grid { padding: 0 48px; }
+          .headline { font-size: 50px; line-height: 56px; }
+          .grid { padding: 80px 48px 40px; }
           .col-left { padding-right: 48px; }
+          .form-card { width: 420px; padding: 36px 32px; }
         }
         @media (max-width: 1023px) {
           html, body { overflow: auto; }
-          .auth-page { height: auto; min-height: 100vh; overflow: auto; }
-          .main-grid {
-            grid-template-columns: 1fr;
-            padding: 80px 32px 32px;
-            gap: 48px;
-          }
+          .auth-root { height: auto; min-height: 100vh; }
+          .grid { grid-template-columns: 1fr; padding: 80px 32px 32px; gap: 40px; }
           .col-left { padding-right: 0; }
-          .col-right { justify-content: flex-start; }
-          .login-card { width: 100%; max-width: 480px; }
-          .cards-row { flex-wrap: wrap; }
-          .feat-card { flex: 1; min-width: 200px; height: auto; }
-          .headline { font-size: 40px; line-height: 46px; }
+          .form-card { width: 100%; max-width: 460px; }
+          .cards { flex-wrap: wrap; }
+          .card { min-width: 180px; }
+          .halo-main, .halo-mid, .halo-soft { display: none; }
         }
       `}</style>
 
-      <div className="auth-page">
-        {/* Background layers */}
-        <div className="bg-halo-main" />
-        <div className="bg-halo-top" />
-        <div className="bg-halo-bottom" />
+      {/* ════ COUCHE 0 — ROOT ════ */}
+      <div className="auth-root">
 
-        {/* Road illustration */}
-        <svg className="bg-road" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="xMidYMid slice">
-          <path
-            d="M-100 700 Q200 500 400 450 Q600 400 700 320 Q820 230 1000 200 Q1150 175 1300 120 Q1400 95 1540 80"
-            stroke="#BFDBFE" strokeWidth="2" strokeDasharray="12 10" strokeLinecap="round"
-            opacity="0.30"
-          />
-          {/* GPS markers */}
-          {[{x:400, y:452}, {x:700, y:322}, {x:1000, y:202}].map((pt, i) => (
-            <g key={i} opacity="0.13">
-              <ellipse cx={pt.x} cy={pt.y + 18} rx="8" ry="3" fill="#93C5FD" />
-              <path d={`M${pt.x} ${pt.y-16} C${pt.x-10} ${pt.y-16} ${pt.x-14} ${pt.y-6} ${pt.x-14} ${pt.y} C${pt.x-14} ${pt.y+8} ${pt.x} ${pt.y+18} ${pt.x} ${pt.y+18} C${pt.x} ${pt.y+18} ${pt.x+14} ${pt.y+8} ${pt.x+14} ${pt.y} C${pt.x+14} ${pt.y-6} ${pt.x+10} ${pt.y-16} ${pt.x} ${pt.y-16}Z`}
-                fill="#2563EB" />
-              <circle cx={pt.x} cy={pt.y} r="4" fill="white" />
-            </g>
+        {/* ════ COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE ════ */}
+        <svg className="layer-map" viewBox="0 0 400 700" fill="none">
+          {/* Grille urbaine très discrète */}
+          {[40,80,120,160,200,240,280,320,360].map(x => (
+            <line key={`v${x}`} x1={x} y1="0" x2={x} y2="700" stroke="#64748B" strokeWidth="1"/>
+          ))}
+          {[40,80,120,160,200,240,280,320,360,400,440,480,520,560,600,640,680].map(y => (
+            <line key={`h${y}`} x1="0" y1={y} x2="400" y2={y} stroke="#64748B" strokeWidth="1"/>
+          ))}
+          {/* Blocs bâtiments suggérés */}
+          {[[50,50,60,40],[130,60,80,30],[240,45,50,50],[310,70,60,35],[50,150,70,40],[160,140,90,50],[280,155,55,40],[50,240,80,35],[170,250,60,40],[270,235,70,45],[50,340,55,50],[140,330,85,40],[260,345,65,35],[350,330,40,55]].map(([x,y,w,h],i) => (
+            <rect key={i} x={x} y={y} width={w} height={h} fill="#64748B" rx="3"/>
           ))}
         </svg>
 
-        {/* Logo */}
-        <div className="logo">
-          <div className="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
-            </svg>
-          </div>
-          <div>
-            <div className="logo-name">Itilib</div>
-            <div className="logo-sub">Visites à domicile</div>
-          </div>
+        {/* ════ COUCHE 2 — SVG ITINÉRAIRE ════ */}
+        <svg className="layer-route" viewBox="0 0 500 800" fill="none" preserveAspectRatio="none">
+          <path
+            d="M20 40 C160 10 250 90 340 120 S520 240 480 360 S280 520 420 640 S760 760 720 880"
+            stroke="#60A5FA"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="8 8"
+            opacity=".45"
+          />
+        </svg>
+
+        {/* ════ COUCHE 3 — HALOS LUMINEUX ════ */}
+        <div className="halo-main" />
+        <div className="halo-mid"  />
+        <div className="halo-soft" />
+
+        {/* ════ COUCHE 4 — MARQUEURS GPS ════ */}
+        {/* Marqueur 1 — milieu route */}
+        <div className="gps-marker" style={{ left:'54%', top:'28%' }}>
+          <div className="gps-halo" />
+          <div className="gps-ring" />
+          <div className="gps-pin" />
+        </div>
+        {/* Marqueur 2 — bas route */}
+        <div className="gps-marker" style={{ left:'60%', top:'52%' }}>
+          <div className="gps-halo" />
+          <div className="gps-ring" />
+          <div className="gps-pin" />
+        </div>
+        {/* Marqueur 3 — destination */}
+        <div className="gps-marker" style={{ left:'57%', top:'72%' }}>
+          <div className="gps-halo" />
+          <div className="gps-ring" />
+          <div className="gps-pin" />
         </div>
 
-        {/* Main grid */}
-        <div className="main-grid">
+        {/* ════ COUCHE 5 — CONTENU ════ */}
+        <div className="layout">
 
-          {/* ── Left column ── */}
-          <div className="col-left">
-            <div className="badge">Plateforme professionnelle</div>
-
-            <h1 className="headline">
-              <span className="headline-line1">Simplifiez vos visites</span>
-              <span className="headline-line2">à domicile.</span>
-            </h1>
-
-            <p className="description">
-              Planification, cartographie et kilométrage optimisés<br />
-              pour les professionnels de santé.
-            </p>
-
-            <div className="cards-row">
-              {[
-                {
-                  icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M12 8v3l2 2M21 21l-4.35-4.35"/></svg>,
-                  title: 'Itinéraires optimisés',
-                  desc: 'Réduisez vos déplacements et gagnez du temps.',
-                },
-                {
-                  icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>,
-                  title: 'Statistiques détaillées',
-                  desc: 'Kilomètres, temps et frais suivis en temps réel.',
-                },
-                {
-                  icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>,
-                  title: 'Application PWA',
-                  desc: 'Disponible sur tablette, mobile et desktop.',
-                },
-              ].map(f => (
-                <div className="feat-card" key={f.title}>
-                  <div className="feat-icon">{f.icon}</div>
-                  <div className="feat-title">{f.title}</div>
-                  <div className="feat-desc">{f.desc}</div>
-                </div>
-              ))}
+          {/* Logo */}
+          <div className="logo">
+            <div className="logo-mark">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
+              </svg>
+            </div>
+            <div>
+              <div className="logo-text-name">Itilib</div>
+              <div className="logo-text-sub">Visites à domicile</div>
             </div>
           </div>
 
-          {/* ── Right column — Login card ── */}
-          <div className="col-right">
-            <div className="login-card">
-              <div className="form-title">
-                {mode === 'login' ? 'Connexion' : mode === 'register' ? 'Créer un compte' : 'Réinitialiser'}
-              </div>
-              <div className="form-sub">
-                {mode === 'login' ? 'Accédez à votre espace professionnel'
-                  : mode === 'register' ? 'Commencez à organiser vos tournées'
-                  : 'Recevez un lien de réinitialisation par email'}
-              </div>
+          {/* Grid */}
+          <div className="grid">
 
-              <form onSubmit={submit}>
-                {mode === 'register' && (
-                  <div className="field">
-                    <label className="field-label">Prénom / Pseudonyme</label>
-                    <div className="field-wrap">
-                      <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                      <input className="field-input" placeholder="Ex : Sophie, Dr Martin…" value={pseudonyme} onChange={e => setPseudo(e.target.value)} required />
-                    </div>
-                  </div>
-                )}
+            {/* Left */}
+            <div className="col-left">
+              <div className="badge">Plateforme professionnelle</div>
 
-                <div className="field">
-                  <label className="field-label">Adresse email</label>
-                  <div className="field-wrap">
-                    <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                    <input type="email" className="field-input" placeholder="exemple@domaine.fr" value={email} onChange={e => setEmail(e.target.value)} required />
+              <h1 className="headline">
+                <span className="headline-l1">Simplifiez vos visites</span>
+                <span className="headline-l2">à domicile.</span>
+              </h1>
+
+              <p className="desc">
+                Planification, cartographie et kilométrage optimisés<br/>
+                pour les professionnels de santé.
+              </p>
+
+              <div className="cards">
+                {[
+                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/><circle cx="19" cy="18" r="3"/></svg>, title: 'Itinéraires optimisés', desc: 'Réduisez vos déplacements et gagnez du temps.' },
+                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>, title: 'Statistiques détaillées', desc: 'Kilomètres, temps et frais suivis en temps réel.' },
+                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>, title: 'Application PWA', desc: 'Disponible sur tablette, mobile et desktop.' },
+                ].map(f => (
+                  <div className="card" key={f.title}>
+                    <div className="card-icon">{f.icon}</div>
+                    <div className="card-title">{f.title}</div>
+                    <div className="card-desc">{f.desc}</div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — Form */}
+            <div className="col-right">
+              {/* ════ COUCHE 6 — FORMULAIRE ════ */}
+              <div className="form-card">
+                <div className="form-h1">
+                  {mode === 'login' ? 'Connexion' : mode === 'register' ? 'Créer un compte' : 'Réinitialiser'}
+                </div>
+                <div className="form-sub">
+                  {mode === 'login' ? 'Accédez à votre espace professionnel'
+                    : mode === 'register' ? 'Commencez à organiser vos tournées'
+                    : 'Recevez un lien de réinitialisation par email'}
                 </div>
 
-                {mode !== 'reset' && (
+                <form onSubmit={submit}>
+                  {mode === 'register' && (
+                    <div className="field">
+                      <label className="field-label">Prénom / Pseudonyme</label>
+                      <div className="field-wrap">
+                        <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                        <input className="field-input" placeholder="Ex : Sophie, Dr Martin…" value={pseudonyme} onChange={e => setPseudo(e.target.value)} required />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="field">
-                    <label className="field-label">Mot de passe</label>
+                    <label className="field-label">Adresse email</label>
                     <div className="field-wrap">
-                      <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      <input type={showPwd ? 'text' : 'password'} className="field-input" placeholder="••••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-                      <button type="button" className="field-eye" onClick={() => setShowPwd(!showPwd)}>
-                        {showPwd
-                          ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                          : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-                      </button>
+                      <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                      <input type="email" className="field-input" placeholder="exemple@domaine.fr" value={email} onChange={e => setEmail(e.target.value)} required />
                     </div>
                   </div>
-                )}
 
-                <button type="submit" className="btn-submit" disabled={loading}>
-                  {loading ? 'Chargement…'
-                    : mode === 'login' ? <>Se connecter <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
-                    : mode === 'register' ? <>Créer mon compte <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
-                    : 'Envoyer le lien'}
-                </button>
-              </form>
+                  {mode !== 'reset' && (
+                    <div className="field">
+                      <label className="field-label">Mot de passe</label>
+                      <div className="field-wrap">
+                        <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                        <input type={showPwd ? 'text' : 'password'} className="field-input" placeholder="••••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+                        <button type="button" className="field-eye" onClick={() => setShowPwd(!showPwd)}>
+                          {showPwd
+                            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-              <div className="form-links">
-                {mode === 'login' && (
-                  <>
-                    <button className="link-btn" onClick={() => setMode('reset')}>Mot de passe oublié ?</button>
-                    <p className="link-secondary">Pas encore de compte ? <button className="link-btn" onClick={() => setMode('register')}>S'inscrire</button></p>
-                  </>
-                )}
-                {mode !== 'login' && (
-                  <button className="link-btn" onClick={() => setMode('login')} style={{ color: '#64748B' }}>← Retour à la connexion</button>
-                )}
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? 'Chargement…'
+                      : mode === 'login' ? <><span>Se connecter</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
+                      : mode === 'register' ? <><span>Créer mon compte</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
+                      : 'Envoyer le lien'}
+                  </button>
+                </form>
+
+                <div className="form-links">
+                  {mode === 'login' && (<>
+                    <button className="lnk" onClick={() => setMode('reset')}>Mot de passe oublié ?</button>
+                    <p className="lnk-muted">Pas encore de compte ? <button className="lnk" onClick={() => setMode('register')}>S'inscrire</button></p>
+                  </>)}
+                  {mode !== 'login' && (
+                    <button className="lnk" style={{ color:'#64748B' }} onClick={() => setMode('login')}>← Retour à la connexion</button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <footer className="footer">
-          <p>© 2026 Itilib. Tous droits réservés.</p>
-          <div className="footer-links">
-            <a href="/mentions-legales">Mentions légales</a>
-            <a href="/mentions-legales">Confidentialité</a>
-          </div>
-        </footer>
+          {/* Footer */}
+          <footer className="footer">
+            <span>© 2026 Itilib. Tous droits réservés.</span>
+            <div className="footer-links">
+              <a href="/mentions-legales">Mentions légales</a>
+              <a href="/mentions-legales">Confidentialité</a>
+            </div>
+          </footer>
+        </div>
       </div>
     </>
   );
