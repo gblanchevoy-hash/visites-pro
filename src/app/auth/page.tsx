@@ -83,11 +83,11 @@ function AuthInner() {
         ════════════════════════════════════════ */
         .layer-map {
           position: absolute;
-          left: 38%; top: 8%;
-          width: 44%; height: 84%;
+          left: 30%; top: 8%;
+          width: 45%; height: 84%;
           z-index: 1;
-          opacity: 0.05;
-          filter: blur(2px);
+          opacity: 0.06;
+          filter: blur(3px);
           pointer-events: none;
         }
 
@@ -97,8 +97,8 @@ function AuthInner() {
         ════════════════════════════════════════ */
         .layer-route {
           position: absolute;
-          left: 38%; top: 12%;
-          width: 42%; height: 76%;
+          left: 30%; top: 8%;
+          width: 45%; height: 84%;
           z-index: 2;
           pointer-events: none;
           filter: drop-shadow(0 0 12px rgba(96,165,250,.25));
@@ -405,18 +405,13 @@ function AuthInner() {
       <div className="auth-root">
 
         {/* ════ COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE ════ */}
+        {/* Couche 1 — Formes abstraites très douces, pas de grille */}
         <svg className="layer-map" viewBox="0 0 400 700" fill="none">
-          {/* Grille urbaine très discrète */}
-          {[40,80,120,160,200,240,280,320,360].map(x => (
-            <line key={`v${x}`} x1={x} y1="0" x2={x} y2="700" stroke="#64748B" strokeWidth="1"/>
-          ))}
-          {[40,80,120,160,200,240,280,320,360,400,440,480,520,560,600,640,680].map(y => (
-            <line key={`h${y}`} x1="0" y1={y} x2="400" y2={y} stroke="#64748B" strokeWidth="1"/>
-          ))}
-          {/* Blocs bâtiments suggérés */}
-          {[[50,50,60,40],[130,60,80,30],[240,45,50,50],[310,70,60,35],[50,150,70,40],[160,140,90,50],[280,155,55,40],[50,240,80,35],[170,250,60,40],[270,235,70,45],[50,340,55,50],[140,330,85,40],[260,345,65,35],[350,330,40,55]].map(([x,y,w,h],i) => (
-            <rect key={i} x={x} y={y} width={w} height={h} fill="#64748B" rx="3"/>
-          ))}
+          <ellipse cx="200" cy="200" rx="160" ry="120" fill="#CBD5E1" opacity="0.3"/>
+          <ellipse cx="280" cy="420" rx="100" ry="80" fill="#CBD5E1" opacity="0.2"/>
+          <ellipse cx="120" cy="560" rx="130" ry="90" fill="#CBD5E1" opacity="0.2"/>
+          <circle cx="300" cy="150" r="50" fill="#CBD5E1" opacity="0.15"/>
+          <circle cx="80" cy="350" r="70" fill="#CBD5E1" opacity="0.12"/>
         </svg>
 
         {/* ════ COUCHE 2 — SVG ITINÉRAIRE ════ */}
@@ -437,20 +432,18 @@ function AuthInner() {
         <div className="halo-soft" />
 
         {/* ════ COUCHE 4 — MARQUEURS GPS ════ */}
-        {/* Marqueur 1 — milieu route */}
-        <div className="gps-marker" style={{ left:'54%', top:'28%' }}>
+        {/* Marqueurs GPS positionnés sur le tracé de l'itinéraire */}
+        <div className="gps-marker" style={{ left:'44%', top:'25%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        {/* Marqueur 2 — bas route */}
-        <div className="gps-marker" style={{ left:'60%', top:'52%' }}>
+        <div className="gps-marker" style={{ left:'52%', top:'50%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        {/* Marqueur 3 — destination */}
-        <div className="gps-marker" style={{ left:'57%', top:'72%' }}>
+        <div className="gps-marker" style={{ left:'56%', top:'73%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
