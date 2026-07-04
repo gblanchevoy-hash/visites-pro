@@ -46,6 +46,8 @@ export default function DashboardPage() {
   const { user, patients, settings } = useAppStore();
   const [todayRdvs, setTodayRdvs] = useState<RendezVous[]>([]);
   const [weather, setWeather] = useState<{ temp: number; desc: string; icon: string } | null>(null);
+  const [forecast, setForecast] = useState<Array<{ day: string; icon: string; min: number; max: number; desc: string }>>([]);
+  const [showForecast, setShowForecast] = useState(false);
   const [loading, setLoading] = useState(true);
   const today = new Date();
 
@@ -108,7 +110,7 @@ export default function DashboardPage() {
                 { icon:'📅', value:`${aVenir} à venir`,       color:'#0F172A' },
                 { icon:'📈', value:`${effectues} effectuées`, color:'#0F172A' },
                 { icon:'👥', value:`${patients.length} patients`, color:'#0F172A' },
-                ...(weather ? [{ icon: weather.icon, value:`${weather.temp}°C ${weather.desc}`, color:'#0F172A' }] : []),
+                // weather pill rendered separately below for click handling
               ].map((kpi, i) => (
                 <div key={i} style={{
                   display:'flex', alignItems:'center', gap:'8px',
@@ -121,8 +123,34 @@ export default function DashboardPage() {
                   <span>{kpi.value}</span>
                 </div>
               ))}
+              {/* Météo cliquable */}
+              {weather && (
+                <div onClick={() => setShowForecast(!showForecast)}
+                  style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 16px', background: showForecast ? '#EFF6FF' : '#F8FAFC', border:`1px solid ${showForecast ? '#BFDBFE' : '#E2E8F0'}`, borderRadius:'999px', fontSize:'13px', fontWeight:400, color:'#0F172A', boxShadow:'0 1px 2px rgba(0,0,0,0.04)', cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                  <span style={{ fontSize:'16px' }}>{weather.icon}</span>
+                  <span>{weather.temp}°C {weather.desc}</span>
+                  <span style={{ fontSize:'10px', color:'#94A3B8', marginLeft:'2px' }}>{showForecast ? '▲' : '▼'}</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Prévisions 7 jours */}
+          {showForecast && forecast.length > 0 && (
+            <div style={{ marginTop:'12px', display:'flex', gap:'8px', flexWrap:'wrap' }}>
+              {forecast.map((f, i) => (
+                <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'10px 14px', background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:'12px', minWidth:'72px', boxShadow:'0 2px 8px rgba(15,23,42,0.06)', transition:'transform 0.15s' }}>
+                  <span style={{ fontSize:'11px', fontWeight:600, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.04em' }}>{f.day}</span>
+                  <span style={{ fontSize:'22px', lineHeight:1 }}>{f.icon}</span>
+                  <span style={{ fontSize:'11px', color:'#94A3B8' }}>{f.desc}</span>
+                  <div style={{ display:'flex', gap:'4px', fontSize:'12px', fontWeight:600 }}>
+                    <span style={{ color:'#2563EB' }}>{f.max}°</span>
+                    <span style={{ color:'#94A3B8' }}>{f.min}°</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Content ── */}

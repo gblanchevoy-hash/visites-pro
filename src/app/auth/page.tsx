@@ -432,18 +432,18 @@ function AuthInner() {
         <div className="halo-soft" />
 
         {/* ════ COUCHE 4 — MARQUEURS GPS ════ */}
-        {/* Marqueurs GPS positionnés sur le tracé de l'itinéraire */}
-        <div className="gps-marker" style={{ left:'44%', top:'25%' }}>
+        {/* Marqueurs GPS — coordonnées calculées sur le tracé Bézier exact */}
+        <div className="gps-marker" style={{ left:'47.9%', top:'14.0%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        <div className="gps-marker" style={{ left:'52%', top:'50%' }}>
+        <div className="gps-marker" style={{ left:'63%', top:'29.7%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        <div className="gps-marker" style={{ left:'56%', top:'73%' }}>
+        <div className="gps-marker" style={{ left:'61%', top:'60.5%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
