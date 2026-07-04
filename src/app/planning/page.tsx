@@ -239,28 +239,60 @@ export default function PlanningPage() {
     toast.success('RDV dupliqué');
   };
 
-  // ── Drag & drop ──
-  const dragState = useRef<{ rdv: RendezVous; rect: DOMRect; days?: Date[]; moved: boolean; clickTime: number } | null>(null);
-  const DRAG_THRESHOLD = 6;
-  const LONG_PRESS_MS = 180;
+  // ── Interaction système ──
+  // Règles strictes :
+  // 1. Clic droit → menu contextuel UNIQUEMENT (pas de déplacement, preventDefault sur pointerdown)
+  // 2. Double clic gauche → ouvrir modification
+  // 3. Clic gauche maintenu (>300ms) + déplacement → drag
+  // 4. Clic gauche simple → rien
+
+  const dragState = useRef<{
+    rdv: RendezVous; rect: DOMRect; days?: Date[];
+    sx: number; sy: number;
+    moved: boolean; timer: ReturnType<typeof setTimeout> | null;
+    dragActive: boolean;
+  } | null>(null);
+
+  const DRAG_THRESHOLD = 8;
+  const HOLD_DELAY_MS  = 300; // must hold this long before drag activates
 
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
-    e.preventDefault(); e.stopPropagation();
+    // Clic droit → ignorer complètement (onContextMenu s'en charge)
+    if (e.button === 2 || e.buttons === 2) return;
+    // Touch → ouvrir directement
     if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
 
+    e.stopPropagation();
+    // Ne PAS e.preventDefault() ici — sinon le double-clic ne marche pas sur Firefox
+
     const sx = e.clientX, sy = e.clientY;
-    dragState.current = { rdv, rect: container.getBoundingClientRect(), days, moved: false, clickTime: Date.now() };
+
+    // Timer : after HOLD_DELAY_MS sans mouvement, on "arme" le drag
+    const timer = setTimeout(() => {
+      if (dragState.current && !dragState.current.moved) {
+        dragState.current.dragActive = true;
+        // Curseur change pour indiquer qu'on peut glisser
+        document.body.style.cursor = 'grabbing';
+      }
+    }, HOLD_DELAY_MS);
+
+    dragState.current = {
+      rdv, rect: container.getBoundingClientRect(), days,
+      sx, sy, moved: false, timer, dragActive: false,
+    };
 
     const onMove = (mv: MouseEvent) => {
       if (!dragState.current) return;
       const dx = mv.clientX - sx, dy = mv.clientY - sy;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      const elapsed = Date.now() - dragState.current.clickTime;
-      if (!dragState.current.moved && dist > DRAG_THRESHOLD && elapsed > LONG_PRESS_MS) {
+
+      // Drag actif seulement si armé ET déplacement suffisant
+      if (dragState.current.dragActive && dist > DRAG_THRESHOLD && !dragState.current.moved) {
         dragState.current.moved = true;
         createGhost(rdv, mv.clientX, mv.clientY);
         setDraggingId(rdv.id);
       }
+
       if (dragState.current.moved && ghostRef.current) {
         ghostRef.current.style.left = `${mv.clientX}px`;
         ghostRef.current.style.top  = `${mv.clientY}px`;
@@ -271,15 +303,32 @@ export default function PlanningPage() {
         const hEl = ghostRef.current.querySelector('span');
         if (hEl) hEl.textContent = `${fmtH(t)} – ${fmtH(minutesToTime(Math.min(mins + rdv.duree_minutes, 23*60)))}`;
       }
+
+      // Annuler le drag si mouvement avant délai
+      if (dist > 3 && !dragState.current.dragActive && dragState.current.timer) {
+        clearTimeout(dragState.current.timer);
+        dragState.current.timer = null;
+      }
     };
 
     const onUp = async (up: MouseEvent) => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+
       if (!dragState.current) { setDraggingId(null); return; }
+      if (dragState.current.timer) clearTimeout(dragState.current.timer);
+
       const { rdv: r, rect, days: ds, moved } = dragState.current;
       removeGhost();
-      if (!moved) { setDraggingId(null); dragState.current = null; return; }
+
+      if (!moved) {
+        // Simple clic ou clic court → rien (le double-clic gère l'ouverture)
+        setDraggingId(null); dragState.current = null;
+        return;
+      }
+
+      // Drop
       const relY = up.clientY - rect.top;
       const mins = snapTo15(Math.max(DAY_START*60, DAY_START*60 + Math.round(relY/HOUR_HEIGHT*60)));
       const newH = minutesToTime(Math.min(mins, 22*60));
@@ -290,7 +339,9 @@ export default function PlanningPage() {
         const relX = up.clientX - rect.left - 64;
         newDate = toISODate(ds[Math.max(0, Math.min(ds.length-1, Math.floor(relX/colW)))]);
       }
-      if (newH === r.heure_debut && newDate === r.date) { setDraggingId(null); dragState.current = null; return; }
+      if (newH === r.heure_debut && newDate === r.date) {
+        setDraggingId(null); dragState.current = null; return;
+      }
       const { data, error } = await supabase.from('rendez_vous')
         .update({ date: newDate, heure_debut: newH, heure_fin: newF })
         .eq('id', r.id).select('*, patient:patients(*)').single();
@@ -303,6 +354,7 @@ export default function PlanningPage() {
       }
       setDraggingId(null); dragState.current = null;
     };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [pushHistory, updateRendezVous]);
@@ -404,8 +456,8 @@ export default function PlanningPage() {
     return (
       <>
         <div
-          onPointerDown={onPointerDown}
-          onDoubleClick={() => { setEditRdv(rdv); setShowModal(true); }}
+          onPointerDown={e => { if (e.button !== 2) onPointerDown(e); }}
+          onDoubleClick={e => { e.stopPropagation(); setEditRdv(rdv); setShowModal(true); }}
           onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ rdv, x: e.clientX, y: e.clientY }); }}
           onMouseEnter={hasInfo ? handleMouseEnter : undefined}
           onMouseLeave={hasInfo ? handleMouseLeave : undefined}

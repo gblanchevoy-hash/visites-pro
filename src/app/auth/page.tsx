@@ -97,11 +97,11 @@ function AuthInner() {
         ════════════════════════════════════════ */
         .layer-route {
           position: absolute;
-          left: 30%; top: 8%;
-          width: 45%; height: 84%;
-          z-index: 2;
+          left: 28%; top: 5%;
+          width: 50%; height: 90%;
+          z-index: 6;
           pointer-events: none;
-          filter: drop-shadow(0 0 12px rgba(96,165,250,.25));
+          filter: drop-shadow(0 0 16px rgba(96,165,250,.40));
         }
 
         /* ════════════════════════════════════════
@@ -110,39 +110,39 @@ function AuthInner() {
         ════════════════════════════════════════ */
         .halo-main {
           position: absolute;
-          right: -120px; top: 50%;
+          right: -80px; top: 50%;
           transform: translateY(-50%);
-          width: 950px; height: 950px;
+          width: 1000px; height: 1000px;
           border-radius: 50%;
           background: radial-gradient(
             circle,
-            rgba(59,130,246,.22) 0%,
-            rgba(96,165,250,.14) 25%,
-            rgba(147,197,253,.08) 50%,
-            rgba(255,255,255,0) 75%
+            rgba(59,130,246,.38) 0%,
+            rgba(96,165,250,.24) 25%,
+            rgba(147,197,253,.12) 50%,
+            rgba(255,255,255,0) 72%
           );
-          filter: blur(80px);
-          opacity: 0.95;
+          filter: blur(70px);
+          opacity: 1;
           z-index: 3;
           pointer-events: none;
         }
         .halo-mid {
           position: absolute;
-          right: 50px; top: 45%;
-          width: 600px; height: 600px;
+          right: 60px; top: 42%;
+          width: 700px; height: 700px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(37,99,235,.18), transparent 72%);
-          filter: blur(120px);
+          background: radial-gradient(circle, rgba(37,99,235,.28), transparent 68%);
+          filter: blur(100px);
           z-index: 3;
           pointer-events: none;
         }
         .halo-soft {
           position: absolute;
-          right: 0; top: 20%;
-          width: 800px; height: 700px;
+          right: -40px; top: 15%;
+          width: 900px; height: 800px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(219,234,254,.45), transparent);
-          filter: blur(160px);
+          background: radial-gradient(circle, rgba(191,219,254,.55), transparent 65%);
+          filter: blur(140px);
           z-index: 3;
           pointer-events: none;
         }
@@ -153,9 +153,10 @@ function AuthInner() {
         ════════════════════════════════════════ */
         .gps-marker {
           position: absolute;
-          z-index: 4;
+          z-index: 7;
           pointer-events: none;
           display: flex; align-items: center; justify-content: center;
+          transform: translate(-50%, -50%);
         }
         .gps-halo {
           position: absolute;
@@ -419,10 +420,10 @@ function AuthInner() {
           <path
             d="M20 40 C160 10 250 90 340 120 S520 240 480 360 S280 520 420 640 S760 760 720 880"
             stroke="#60A5FA"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
-            strokeDasharray="8 8"
-            opacity=".45"
+            strokeDasharray="10 7"
+            opacity=".65"
           />
         </svg>
 
@@ -432,18 +433,18 @@ function AuthInner() {
         <div className="halo-soft" />
 
         {/* ════ COUCHE 4 — MARQUEURS GPS ════ */}
-        {/* Marqueurs GPS — coordonnées calculées sur le tracé Bézier exact */}
-        <div className="gps-marker" style={{ left:'47.9%', top:'14.0%' }}>
+        {/* Marqueurs GPS sur le tracé Bézier — positions mathématiques exactes */}
+        <div className="gps-marker" style={{ left:'43.1%', top:'9.7%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        <div className="gps-marker" style={{ left:'63%', top:'29.7%' }}>
+        <div className="gps-marker" style={{ left:'73.9%', top:'28.2%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />
         </div>
-        <div className="gps-marker" style={{ left:'61%', top:'60.5%' }}>
+        <div className="gps-marker" style={{ left:'66.2%', top:'61.2%' }}>
           <div className="gps-halo" />
           <div className="gps-ring" />
           <div className="gps-pin" />

@@ -62,12 +62,20 @@ export default function DashboardPage() {
   useEffect(() => {
     const lat = settings?.adresse_depart_lat ?? 43.7;
     const lng = settings?.adresse_depart_lng ?? 6.0;
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Europe%2FParis`)
+    const icons: Record<string,string> = {'0':'☀️','1':'🌤️','2':'⛅','3':'☁️','45':'🌫️','48':'🌫️','51':'🌦️','53':'🌦️','61':'🌧️','63':'🌧️','71':'🌨️','80':'🌦️','81':'🌧️','95':'⛈️'};
+    const descs: Record<string,string> = {'0':'Ensoleillé','1':'Peu nuageux','2':'Partiellement nuageux','3':'Couvert','45':'Brouillard','51':'Bruine légère','61':'Pluie','71':'Neige','80':'Averses','95':'Orage'};
+    const JOURS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=7`)
       .then(r => r.json()).then(data => {
         const code = String(data.current.weathercode);
-        const icons: Record<string,string> = {'0':'☀️','1':'🌤️','2':'⛅','3':'☁️','51':'🌦️','61':'🌧️','71':'🌨️','80':'🌦️','95':'⛈️'};
-        const descs: Record<string,string> = {'0':'Ensoleillé','1':'Peu nuageux','2':'Partiellement nuageux','3':'Couvert','51':'Bruine','61':'Pluie','71':'Neige','80':'Averses','95':'Orage'};
         setWeather({ temp: Math.round(data.current.temperature_2m), desc: descs[code]??'', icon: icons[code]??'🌡️' });
+        if (data.daily?.time) {
+          setForecast(data.daily.time.map((d: string, i: number) => {
+            const c = String(data.daily.weathercode[i]);
+            const dayName = i === 0 ? 'Auj.' : i === 1 ? 'Dem.' : JOURS[new Date(d).getDay()];
+            return { day: dayName, icon: icons[c]??'🌡️', min: Math.round(data.daily.temperature_2m_min[i]), max: Math.round(data.daily.temperature_2m_max[i]), desc: descs[c]??'' };
+          }));
+        }
       }).catch(() => {});
   }, [settings?.adresse_depart_lat]);
 
