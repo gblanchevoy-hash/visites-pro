@@ -98,7 +98,7 @@ export default function DashboardPage() {
       <div style={{ flex:1, overflow:'auto', background:'#F8FAFC', position:'relative' }}>
 
         {/* ── Header ── */}
-        <div style={{ position:'relative', padding:'8px 32px 24px', background:'#ffffff', borderBottom:'1px solid #E2E8F0', overflow:'hidden' }}>
+        <div style={{ position:'relative', padding:'8px 16px 20px', background:'#ffffff', borderBottom:'1px solid #E2E8F0', overflow:'hidden' }}>
           <DecorativeDots />
           <div style={{ position:'relative', zIndex:1 }}>
             <p style={{ fontSize:'12px', fontWeight:500, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'6px' }}>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
             </p>
 
             {/* KPI badges */}
-            <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'12px' }}>
               {[
                 { icon:'📅', value:`${aVenir} à venir`,       color:'#0F172A' },
                 { icon:'📈', value:`${effectues} effectuées`, color:'#0F172A' },
@@ -162,10 +162,10 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Content ── */}
-        <div style={{ padding:'32px', maxWidth:'1280px', margin:'0 auto' }}>
+        <div style={{ padding:'16px', maxWidth:'1280px', margin:'0 auto' }}>
 
           {/* Quick action cards — 2 columns */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'24px' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'12px', marginBottom:'20px' }}>
             {quickCards.map(card => {
               const Icon = card.icon;
               return (

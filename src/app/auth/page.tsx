@@ -504,8 +504,8 @@ function AuthInner() {
           <footer className="ft">
             <span>© 2026 Itilib. Tous droits réservés.</span>
             <div className="ftl">
-              <a href="/mentions-legales">Mentions légales</a>
-              <a href="/mentions-legales">Confidentialité</a>
+              <a href="/legal?tab=mentions">Mentions légales</a>
+              <a href="/legal?tab=confidentialite">Confidentialité</a>
             </div>
           </footer>
         </div>

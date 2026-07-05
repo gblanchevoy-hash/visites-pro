@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { Key, Clock, Loader2, Eye, EyeOff, CheckCircle2, AlertCircle, User, Shield, Save } from 'lucide-react';
 
 const S = {
-  page: { flex:1, background:'#F8FAFC', overflow:'auto' as const, padding:'32px' },
+  page: { flex:1, background:'#F8FAFC', overflow:'auto' as const, padding:'16px' },
   card: { background:'#fff', border:'1px solid #E2E8F0', borderRadius:'16px', boxShadow:'0 4px 12px rgba(15,23,42,0.04)', padding:'24px', marginBottom:'16px' },
   cardHeader: { display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', paddingBottom:'16px', borderBottom:'1px solid #F1F5F9' },
   iconBox: (bg:string) => ({ width:'40px',height:'40px',borderRadius:'12px',background:bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 as const }),
