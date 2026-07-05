@@ -74,27 +74,65 @@ function AuthInner() {
           position:relative;
         }
 
-        /* ─── HALOS LUMINEUX ─── */
-        .h1{position:absolute;pointer-events:none;border-radius:50%;
-          width:900px;height:900px;
-          right:-200px;top:50%;transform:translateY(-50%);
-          background:radial-gradient(circle,rgba(59,110,255,.28) 0%,rgba(79,125,255,.16) 35%,transparent 70%);
-          filter:blur(260px);z-index:0;}
-        .h2{position:absolute;pointer-events:none;border-radius:50%;
-          width:700px;height:700px;
-          left:20%;top:10%;
-          background:radial-gradient(circle,rgba(59,110,255,.18) 0%,transparent 65%);
-          filter:blur(350px);z-index:0;
-          animation:breathe 8s ease-in-out infinite;}
-        .h3{position:absolute;pointer-events:none;border-radius:50%;
-          width:500px;height:400px;
-          left:5%;bottom:0%;
-          background:radial-gradient(circle,rgba(79,125,255,.07) 0%,transparent 70%);
-          filter:blur(280px);z-index:0;}
+        /* ─── HALOS LUMINEUX — parfaitement lisses, jamais pixelisés ─── */
+        /* Halo principal derrière le formulaire */
+        .h1{
+          position:absolute;pointer-events:none;
+          width:1100px;height:1100px;border-radius:50%;
+          right:-300px;top:50%;transform:translateY(-50%);
+          background:radial-gradient(ellipse at center,
+            rgba(59,110,255,.32) 0%,
+            rgba(79,125,255,.20) 20%,
+            rgba(122,173,255,.10) 45%,
+            rgba(191,219,254,.04) 70%,
+            transparent 100%);
+          filter:blur(60px);
+          z-index:0;
+          will-change:transform;
+        }
+        /* Second halo derrière le trajet */
+        .h2{
+          position:absolute;pointer-events:none;
+          width:800px;height:800px;border-radius:50%;
+          left:25%;top:5%;
+          background:radial-gradient(ellipse at center,
+            rgba(59,110,255,.16) 0%,
+            rgba(122,173,255,.08) 40%,
+            transparent 75%);
+          filter:blur(80px);
+          z-index:0;
+          animation:breathe 9s ease-in-out infinite;
+          will-change:opacity,transform;
+        }
+        /* Halo bas-gauche très subtil */
+        .h3{
+          position:absolute;pointer-events:none;
+          width:600px;height:500px;border-radius:50%;
+          left:-80px;bottom:-50px;
+          background:radial-gradient(ellipse at center,
+            rgba(79,125,255,.10) 0%,
+            rgba(191,219,254,.05) 50%,
+            transparent 80%);
+          filter:blur(90px);
+          z-index:0;
+        }
+        /* Halo additionnel concentré derrière le formulaire */
+        .h4{
+          position:absolute;pointer-events:none;
+          width:600px;height:600px;border-radius:50%;
+          right:-80px;top:50%;transform:translateY(-50%);
+          background:radial-gradient(ellipse at center,
+            rgba(37,99,235,.22) 0%,
+            rgba(59,130,246,.10) 35%,
+            transparent 70%);
+          filter:blur(40px);
+          z-index:0;
+        }
 
         @keyframes breathe{
-          0%,100%{opacity:1;transform:scale(1);}
-          50%{opacity:.65;transform:scale(1.08);}
+          0%,100%{opacity:.9;transform:scale(1) translate(0,0);}
+          33%{opacity:.7;transform:scale(1.06) translate(20px,-10px);}
+          66%{opacity:.8;transform:scale(.96) translate(-10px,15px);}
         }
 
         /* ─── GRILLE CENTRALE (zone entre texte et formulaire) ─── */
@@ -120,16 +158,13 @@ function AuthInner() {
         /* ─── HALO DU TRAJET ─── */
         .route-glow{
           position:absolute;
-          left:42%;top:10%;
-          width:200px;height:80%;
+          left:40%;top:8%;
+          width:240px;height:84%;
           z-index:2;pointer-events:none;
-          background:linear-gradient(180deg,
-            rgba(79,125,255,.20) 0%,
-            rgba(79,125,255,.12) 40%,
-            rgba(79,125,255,.08) 70%,
-            transparent 100%);
-          filter:blur(30px);
-          opacity:.20;
+          background:radial-gradient(ellipse 120px 400px at center,
+            rgba(122,173,255,.18) 0%,
+            transparent 80%);
+          filter:blur(24px);
         }
 
         /* ─── TRAJET SVG ─── */
@@ -301,6 +336,7 @@ function AuthInner() {
         <div className="h1" />
         <div className="h2" />
         <div className="h3" />
+        <div className="h4" />
 
         {/* ══ COUCHE 1 — GRILLE CENTRALE ══ */}
         <div className="grid-zone" aria-hidden="true">
@@ -318,11 +354,13 @@ function AuthInner() {
           <path
             className="route-path"
             d="M 100 10 C 40 60 160 120 120 200 C 80 280 40 320 80 400 C 120 480 160 520 130 600 C 100 680 60 720 90 790"
-            stroke="#7AADFF"
-            strokeWidth="2.5"
+            stroke="#93C5FD"
+            strokeWidth="2"
             strokeLinecap="round"
-            strokeDasharray="8 6"
-            opacity=".85"
+            strokeLinejoin="round"
+            strokeDasharray="7 6"
+            opacity=".80"
+            style={{shapeRendering:'geometricPrecision'}}
           />
         </svg>
 

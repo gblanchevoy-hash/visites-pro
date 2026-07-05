@@ -246,101 +246,110 @@ export default function PlanningPage() {
   // • Simple clic gauche  → rien
   // • Maintien 350ms puis glisser → déplace le RDV
 
+  // ── Drag & drop ──
+  // Logique simple et fiable :
+  // 1. mousedown → on enregistre la position de départ
+  // 2. Si on glisse de plus de DRAG_PX pixels → on active le drag immédiatement
+  // 3. mouseup → on dépose et on sauvegarde
+  // Le double-clic et le clic-droit sont gérés séparément sur le composant RdvCard.
+
   const dragState = useRef<{
     rdv: RendezVous; rect: DOMRect; days?: Date[];
-    startX: number; startY: number;
-    moved: boolean; armed: boolean;
-    armTimer: ReturnType<typeof setTimeout> | null;
+    startX: number; startY: number; moved: boolean;
   } | null>(null);
 
-  const DRAG_PX  = 8;   // pixels minimum pour déclencher le déplacement
-  const ARM_MS   = 350; // ms de maintien avant activation du drag
+  const DRAG_PX = 5;
 
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
     if (e.button === 2) return;
     if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
+    e.preventDefault();
     e.stopPropagation();
 
-    const startX = e.clientX, startY = e.clientY;
-    const rect = container.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect   = container.getBoundingClientRect();
 
-    dragState.current = {
-      rdv, rect, days,
-      startX, startY, moved: false, armed: false,
-      armTimer: setTimeout(() => {
-        if (dragState.current) {
-          dragState.current.armed = true;
-          document.body.style.cursor = 'grabbing';
-        }
-      }, ARM_MS),
-    };
+    dragState.current = { rdv, rect, days, startX, startY, moved: false };
 
-    function onMove(mv: MouseEvent) {
+    const onMove = (mv: MouseEvent) => {
       if (!dragState.current) return;
-      const dx = mv.clientX - startX, dy = mv.clientY - startY;
+      const dx   = mv.clientX - startX;
+      const dy   = mv.clientY - startY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (!dragState.current.armed) {
-        if (dist > 4 && dragState.current.armTimer) {
-          clearTimeout(dragState.current.armTimer);
-          dragState.current.armTimer = null;
-        }
-        return;
-      }
+
+      // Activer le drag dès que le seuil est atteint
       if (!dragState.current.moved && dist > DRAG_PX) {
         dragState.current.moved = true;
         createGhost(rdv, mv.clientX, mv.clientY);
         setDraggingId(rdv.id);
+        document.body.style.cursor = 'grabbing';
       }
+
       if (dragState.current.moved && ghostRef.current) {
         ghostRef.current.style.left = `${mv.clientX}px`;
         ghostRef.current.style.top  = `${mv.clientY}px`;
+
         const relY = mv.clientY - dragState.current.rect.top;
         const mins = snapTo15(Math.max(DAY_START * 60, DAY_START * 60 + Math.round(relY / HOUR_HEIGHT * 60)));
         const hEl  = ghostRef.current.querySelector('span');
         if (hEl) {
-          const t = minutesToTime(Math.min(mins, 22 * 60));
-          hEl.textContent = `${fmtH(t)} – ${fmtH(minutesToTime(Math.min(mins + rdv.duree_minutes, 23 * 60)))}`;
+          const newStart = minutesToTime(Math.min(mins, 22 * 60));
+          const newEnd   = minutesToTime(Math.min(mins + rdv.duree_minutes, 23 * 60));
+          hEl.textContent = `${fmtH(newStart)} – ${fmtH(newEnd)}`;
         }
       }
-    }
+    };
 
-    async function onUp(up: MouseEvent) {
+    const onUp = async (up: MouseEvent) => {
       document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mouseup',   onUp);
       document.body.style.cursor = '';
+
       if (!dragState.current) { setDraggingId(null); return; }
-      if (dragState.current.armTimer) clearTimeout(dragState.current.armTimer);
+
       const { rdv: r, days: ds, moved } = dragState.current;
       removeGhost();
       setDraggingId(null);
       dragState.current = null;
-      if (!moved) return;
-      const relY  = up.clientY - rect.top;
-      const mins  = snapTo15(Math.max(DAY_START * 60, DAY_START * 60 + Math.round(relY / HOUR_HEIGHT * 60)));
-      const newH  = minutesToTime(Math.min(mins, 22 * 60));
-      const newF  = minutesToTime(Math.min(mins + r.duree_minutes, 23 * 60));
-      let newDate = r.date;
+
+      if (!moved) return; // simple clic → rien
+
+      // Calculer la nouvelle position
+      const relY    = up.clientY - rect.top;
+      const mins    = snapTo15(Math.max(DAY_START * 60, DAY_START * 60 + Math.round(relY / HOUR_HEIGHT * 60)));
+      const newH    = minutesToTime(Math.min(mins, 22 * 60));
+      const newF    = minutesToTime(Math.min(mins + r.duree_minutes, 23 * 60));
+      let   newDate = r.date;
+
       if (ds && ds.length > 1) {
         const colW = (rect.width - 64) / ds.length;
         const relX = up.clientX - rect.left - 64;
-        newDate = toISODate(ds[Math.max(0, Math.min(ds.length - 1, Math.floor(relX / colW)))]);
+        const colIdx = Math.max(0, Math.min(ds.length - 1, Math.floor(relX / colW)));
+        newDate = toISODate(ds[colIdx]);
       }
+
       if (newH === r.heure_debut && newDate === r.date) return;
+
       const { data, error } = await supabase
         .from('rendez_vous')
         .update({ date: newDate, heure_debut: newH, heure_fin: newF })
-        .eq('id', r.id).select('*, patient:patients(*)').single();
-      if (error) toast.error('Erreur déplacement');
-      else {
+        .eq('id', r.id)
+        .select('*, patient:patients(*)')
+        .single();
+
+      if (error) {
+        toast.error('Erreur lors du déplacement');
+      } else {
         const updated = data as unknown as RendezVous;
         pushHistory({ type: 'UPDATE_RDV', before: r, after: updated });
         updateRendezVous(updated);
         toast.success(`Déplacé → ${fmtH(newH)}`);
       }
-    }
+    };
 
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('mouseup',   onUp);
   }, [pushHistory, updateRendezVous]);
 
   // ── Travel badge ──
