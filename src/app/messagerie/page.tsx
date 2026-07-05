@@ -269,7 +269,7 @@ export default function MessageriePage() {
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900">{selectedCollab.profil?.pseudonyme ?? 'Inconnu'}</p>
-                  <p className="text-xs text-emerald-600 flex items-center gap-1"><Lock className="w-3 h-3" /> Échange chiffré end-to-end</p>
+                  <p className="text-xs text-slate-400 flex items-center gap-1"><Lock className="w-3 h-3" /> Chiffré en transit · usage organisationnel</p>
                 </div>
               </div>
 
