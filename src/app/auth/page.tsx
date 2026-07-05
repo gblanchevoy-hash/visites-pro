@@ -74,66 +74,79 @@ function AuthInner() {
           position:relative;
         }
 
-        /* ─── HALOS LUMINEUX — parfaitement lisses, jamais pixelisés ─── */
-        /* Halo principal derrière le formulaire */
+        /* ─── HALOS LUMINEUX — effet fumée bleue fine ─── */
+        /* Couche 1 : grande nappe lumineuse derrière le formulaire */
         .h1{
           position:absolute;pointer-events:none;
-          width:1100px;height:1100px;border-radius:50%;
-          right:-300px;top:50%;transform:translateY(-50%);
-          background:radial-gradient(ellipse at center,
-            rgba(59,110,255,.32) 0%,
-            rgba(79,125,255,.20) 20%,
-            rgba(122,173,255,.10) 45%,
-            rgba(191,219,254,.04) 70%,
-            transparent 100%);
-          filter:blur(60px);
+          width:820px;height:920px;border-radius:40% 60% 55% 45% / 40% 45% 55% 60%;
+          right:-180px;top:50%;transform:translateY(-50%);
+          background:radial-gradient(ellipse at 40% 50%,
+            rgba(59,110,255,.40) 0%,
+            rgba(79,125,255,.26) 22%,
+            rgba(122,173,255,.14) 45%,
+            rgba(191,219,254,.05) 68%,
+            transparent 88%);
+          filter:blur(55px);
           z-index:0;
           will-change:transform;
+          animation:smoke1 12s ease-in-out infinite;
         }
-        /* Second halo derrière le trajet */
+        /* Couche 2 : fumée secondaire qui dérive lentement */
         .h2{
           position:absolute;pointer-events:none;
-          width:800px;height:800px;border-radius:50%;
-          left:25%;top:5%;
-          background:radial-gradient(ellipse at center,
-            rgba(59,110,255,.16) 0%,
-            rgba(122,173,255,.08) 40%,
-            transparent 75%);
-          filter:blur(80px);
+          width:640px;height:700px;border-radius:55% 45% 40% 60% / 50% 60% 40% 50%;
+          right:-60px;top:40%;
+          background:radial-gradient(ellipse at 55% 45%,
+            rgba(37,99,235,.30) 0%,
+            rgba(59,110,255,.16) 30%,
+            rgba(147,197,253,.06) 60%,
+            transparent 82%);
+          filter:blur(45px);
           z-index:0;
-          animation:breathe 9s ease-in-out infinite;
-          will-change:opacity,transform;
+          animation:smoke2 15s ease-in-out infinite;
+          will-change:transform,opacity;
         }
-        /* Halo bas-gauche très subtil */
+        /* Couche 3 : halo diffus en arrière-plan général */
         .h3{
           position:absolute;pointer-events:none;
-          width:600px;height:500px;border-radius:50%;
-          left:-80px;bottom:-50px;
+          width:1000px;height:800px;border-radius:50%;
+          right:-400px;top:50%;transform:translateY(-50%);
           background:radial-gradient(ellipse at center,
-            rgba(79,125,255,.10) 0%,
-            rgba(191,219,254,.05) 50%,
-            transparent 80%);
-          filter:blur(90px);
+            rgba(79,125,255,.18) 0%,
+            rgba(191,219,254,.07) 45%,
+            transparent 78%);
+          filter:blur(100px);
           z-index:0;
         }
-        /* Halo additionnel concentré derrière le formulaire */
+        /* Couche 4 : lueur concentrée très fine */
         .h4{
           position:absolute;pointer-events:none;
-          width:600px;height:600px;border-radius:50%;
-          right:-80px;top:50%;transform:translateY(-50%);
-          background:radial-gradient(ellipse at center,
-            rgba(37,99,235,.22) 0%,
-            rgba(59,130,246,.10) 35%,
-            transparent 70%);
-          filter:blur(40px);
+          width:380px;height:480px;border-radius:50% 50% 45% 55% / 55% 45% 55% 45%;
+          right:30px;top:50%;transform:translateY(-50%);
+          background:radial-gradient(ellipse at 50% 50%,
+            rgba(37,99,235,.28) 0%,
+            rgba(59,110,255,.14) 40%,
+            transparent 75%);
+          filter:blur(28px);
           z-index:0;
+          animation:smoke3 10s ease-in-out infinite;
         }
 
-        @keyframes breathe{
-          0%,100%{opacity:.9;transform:scale(1) translate(0,0);}
-          33%{opacity:.7;transform:scale(1.06) translate(20px,-10px);}
-          66%{opacity:.8;transform:scale(.96) translate(-10px,15px);}
+        @keyframes smoke1{
+          0%,100%{border-radius:40% 60% 55% 45% / 40% 45% 55% 60%;opacity:1;}
+          50%{border-radius:55% 45% 40% 60% / 55% 60% 40% 45%;opacity:.82;transform:translateY(-50%) translateX(-20px) scale(1.04);}
         }
+        @keyframes smoke2{
+          0%,100%{border-radius:55% 45% 40% 60% / 50% 60% 40% 50%;opacity:.9;transform:translateX(0) translateY(0);}
+          40%{border-radius:40% 60% 55% 45% / 45% 40% 60% 55%;opacity:.7;transform:translateX(-30px) translateY(-20px);}
+          70%{opacity:.85;transform:translateX(15px) translateY(25px);}
+        }
+        @keyframes smoke3{
+          0%,100%{opacity:.9;transform:translateY(-50%) scale(1);}
+          50%{opacity:.65;transform:translateY(-52%) scale(1.08);}
+        }
+
+
 
         /* ─── GRILLE CENTRALE (zone entre texte et formulaire) ─── */
         .grid-zone{
@@ -155,17 +168,7 @@ function AuthInner() {
           backdrop-filter:blur(4px);
         }
 
-        /* ─── HALO DU TRAJET ─── */
-        .route-glow{
-          position:absolute;
-          left:40%;top:8%;
-          width:240px;height:84%;
-          z-index:2;pointer-events:none;
-          background:radial-gradient(ellipse 120px 400px at center,
-            rgba(122,173,255,.18) 0%,
-            transparent 80%);
-          filter:blur(24px);
-        }
+
 
         /* ─── TRAJET SVG ─── */
         .route-svg{
@@ -347,7 +350,6 @@ function AuthInner() {
         </div>
 
         {/* ══ COUCHE 2 — HALO DU TRAJET ══ */}
-        <div className="route-glow" />
 
         {/* ══ COUCHE 3 — TRAJET SVG ══ */}
         <svg className="route-svg" viewBox="0 0 200 800" fill="none" preserveAspectRatio="none">

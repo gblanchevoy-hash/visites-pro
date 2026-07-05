@@ -225,18 +225,25 @@ export default function PlanningPage() {
 
   const handleCtxDupliquer = async (rdv: RendezVous) => {
     setCtxMenu(null);
+    // Copie complète de tous les champs — rien ne doit être perdu
     const { data, error } = await supabase.from('rendez_vous').insert({
-      user_id: rdv.user_id, patient_id: rdv.patient_id ?? null,
-      date: rdv.date, heure_debut: rdv.heure_debut, heure_fin: rdv.heure_fin,
-      duree_minutes: rdv.duree_minutes, statut: 'planifie',
-      notes: rdv.notes ? `[Copie] ${rdv.notes}` : null,
-      couleur: rdv.couleur ?? null, lat: rdv.lat ?? null, lng: rdv.lng ?? null,
+      user_id:        rdv.user_id,
+      patient_id:     rdv.patient_id ?? null,
+      date:           rdv.date,
+      heure_debut:    rdv.heure_debut,
+      heure_fin:      rdv.heure_fin,
+      duree_minutes:  rdv.duree_minutes,
+      statut:         'planifie',
+      notes:          rdv.notes ?? null,
+      couleur:        rdv.couleur ?? null,
+      lat:            rdv.lat ?? null,
+      lng:            rdv.lng ?? null,
     }).select('*, patient:patients(*)').single();
     if (error) { toast.error('Erreur duplication'); return; }
     const store = useAppStore.getState();
     store.addRendezVous(data as unknown as RendezVous);
     pushHistory({ type: 'ADD_RDV', rdv: data as unknown as RendezVous });
-    toast.success('RDV dupliqué');
+    toast.success(`"${getRdvLabel(rdv)}" dupliqué`);
   };
 
   // ── Drag & drop ──
@@ -817,10 +824,9 @@ export default function PlanningPage() {
             <p style={{ fontSize: '11px', color: '#94A3B8' }}>{fmtH(ctxMenu.rdv.heure_debut)} – {fmtH(ctxMenu.rdv.heure_fin)}</p>
           </div>
           {[
-            { icon: '✏️', label: 'Modifier', action: () => { setCtxMenu(null); setEditRdv(ctxMenu.rdv); setShowModal(true); } },
-            { icon: '↔️', label: 'Déplacer', action: () => { setCtxMenu(null); toast('Maintenez le clic gauche et glissez le RDV', { icon: '↔️', duration: 3000 }); } },
-            { icon: '📋', label: 'Dupliquer', action: () => handleCtxDupliquer(ctxMenu.rdv) },
-            { icon: '🗑️', label: 'Supprimer', action: () => handleCtxSupprimer(ctxMenu.rdv), danger: true },
+            { icon: '✏️', label: 'Modifier',   action: () => { setCtxMenu(null); setEditRdv(ctxMenu.rdv); setShowModal(true); } },
+            { icon: '📋', label: 'Dupliquer',  action: () => handleCtxDupliquer(ctxMenu.rdv) },
+            { icon: '🗑️', label: 'Supprimer',  action: () => handleCtxSupprimer(ctxMenu.rdv), danger: true },
           ].map(item => (
             <button key={item.label} onClick={item.action}
               style={{
