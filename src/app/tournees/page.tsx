@@ -42,7 +42,7 @@ function getRdvCoords(rdv: RendezVous) {
 }
 
 export default function TourneesPage() {
-  const { settings, user, updatePatient, pushHistory } = useAppStore();
+  const { settings, user, updatePatient, pushHistory, segmentCache, setSegmentCache } = useAppStore();
   const [weekStart, setWeekStart] = useState(() => getWeekDays(new Date())[0]);
   const weekDays = getWeekDays(weekStart);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
@@ -98,9 +98,18 @@ export default function TourneesPage() {
     if (depart) sequence.push({ ...depart, id: 'retour' });
     const segs: (Segment | null)[] = [];
     for (let i = 0; i < sequence.length - 1; i++) {
+      const cacheKey = `${sequence[i].id}->${sequence[i+1].id}`;
+      // Check shared cache first to avoid redundant ORS calls
+      if (segmentCache[cacheKey] !== undefined) {
+        segs.push(segmentCache[cacheKey]);
+        continue;
+      }
       await new Promise(r => setTimeout(r, 250));
       const res = await calculerSegment(sequence[i], sequence[i+1], settings?.ors_api_key ?? undefined, user?.id);
-      segs.push(res ? { km: res.distance_km, min: res.duree_min } : null);
+      const segValue = res ? { km: res.distance_km, min: res.duree_min } : null;
+      segs.push(segValue);
+      // Save to shared cache so Planning sees the same values
+      setSegmentCache(cacheKey, segValue);
     }
     setSegments(segs);
     setActiveSegments(Array(segs.length).fill(true));

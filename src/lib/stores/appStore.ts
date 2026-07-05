@@ -70,6 +70,10 @@ interface AppState {
   undo: () => Promise<void>;
   redo: () => Promise<void>;
 
+  // Shared travel segment cache (shared between Planning and Tournées)
+  segmentCache: Record<string, { km: number; min: number } | null>;
+  setSegmentCache: (key: string, value: { km: number; min: number } | null) => void;
+
   // Loaders
   loadPatients: () => Promise<void>;
   loadRendezVous: (dateDebut?: string, dateFin?: string) => Promise<void>;
@@ -184,6 +188,12 @@ export const useAppStore = create<AppState>()(
       cachedOrsKey: '',
       setCachedOrsKey: (cachedOrsKey) => set({ cachedOrsKey }),
 
+      // Shared travel segment cache
+      segmentCache: {},
+      setSegmentCache: (key, value) => set(state => ({
+        segmentCache: { ...state.segmentCache, [key]: value }
+      })),
+
       isOnline: true,
       setIsOnline: (isOnline) => set({ isOnline }),
       sidebarOpen: true,
@@ -260,6 +270,7 @@ export const useAppStore = create<AppState>()(
         past: state.past,
         future: state.future,
         cachedOrsKey: state.cachedOrsKey,
+        segmentCache: state.segmentCache,
       }),
     }
   )

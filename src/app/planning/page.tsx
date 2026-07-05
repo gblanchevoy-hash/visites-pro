@@ -91,7 +91,7 @@ export default function PlanningPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [draggingId, setDraggingId]   = useState<string | null>(null);
-  const [travelCache, setTravelCache] = useState<Record<string, { km: number; min: number } | null>>({});
+  const { segmentCache, setSegmentCache } = useAppStore();
   const computingRef = useRef(false);
   const ghostRef     = useRef<HTMLDivElement | null>(null);
 
@@ -137,10 +137,11 @@ export default function PlanningPage() {
     const curr = currCoords ? { ...currCoords, id: rdvs[idx].id } : null;
     if (!prev || !curr) return null;
     const k = segKey(prev.id, curr.id);
-    if (travelCache[k] !== undefined) return travelCache[k];
-    const km = distanceHaversine(prev.lat, prev.lng, curr.lat, curr.lng);
+    if (segmentCache[k] !== undefined) return segmentCache[k];
+    // Fallback vol d'oiseau × 1.3 (coefficient routier moyen) — remplacé dès qu'ORS répond
+    const km = distanceHaversine(prev.lat, prev.lng, curr.lat, curr.lng) * 1.3;
     return { km, min: Math.round(km / 50 * 60) };
-  }, [settings, travelCache]);
+  }, [settings, segmentCache]);
 
   const fetchTravelTimes = useCallback(async (rdvs: RendezVous[]) => {
     if (computingRef.current || rdvs.length === 0) return;
@@ -153,14 +154,16 @@ export default function PlanningPage() {
     const updates: Record<string, { km: number; min: number } | null> = {};
     for (let i = 0; i < seq.length - 1; i++) {
       const k = segKey(seq[i].id, seq[i+1].id);
-      if (travelCache[k] !== undefined) continue;
+      if (segmentCache[k] !== undefined) continue;
       await new Promise(r => setTimeout(r, 350));
       const res = await calculerSegment(seq[i], seq[i+1], settings?.ors_api_key ?? undefined, user?.id);
       updates[k] = res ? { km: res.distance_km, min: res.duree_min } : null;
     }
-    if (Object.keys(updates).length) setTravelCache(p => ({ ...p, ...updates }));
+    if (Object.keys(updates).length) {
+      Object.entries(updates).forEach(([k, v]) => setSegmentCache(k, v));
+    }
     computingRef.current = false;
-  }, [settings, travelCache]);
+  }, [settings, segmentCache]);
 
   useEffect(() => {
     const days = view === 'semaine' ? getWeekDays(currentDate) : [currentDate];

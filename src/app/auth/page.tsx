@@ -148,25 +148,7 @@ function AuthInner() {
 
 
 
-        /* ─── GRILLE CENTRALE (zone entre texte et formulaire) ─── */
-        .grid-zone{
-          position:absolute;
-          left:38%;top:12%;
-          width:24%;height:76%;
-          z-index:1;
-          pointer-events:none;
-          display:grid;
-          grid-template-columns:repeat(5,70px);
-          grid-template-rows:repeat(5,70px);
-          gap:14px;
-          justify-content:center;
-          align-content:center;
-        }
-        .g-cell{
-          width:70px;height:70px;border-radius:10px;
-          background:#F7F9FC;
-          backdrop-filter:blur(4px);
-        }
+
 
 
 
@@ -330,7 +312,7 @@ function AuthInner() {
           .p{height:auto;min-height:100vh;}
           .main{grid-template-columns:1fr;padding:80px 28px 32px;gap:48px;}
           .fc{width:100%;max-width:440px;}
-          .grid-zone,.route-svg,.route-glow,.h1,.h2,.h3{display:none;}
+          .route-svg,.route-glow,.h1,.h2,.h3,.h4{display:none;}
         }
       `}</style>
 
@@ -341,13 +323,7 @@ function AuthInner() {
         <div className="h3" />
         <div className="h4" />
 
-        {/* ══ COUCHE 1 — GRILLE CENTRALE ══ */}
-        <div className="grid-zone" aria-hidden="true">
-          {Array.from({length:25}).map((_,i) => {
-            const ops = [.40,.28,.18,.35,.22,.30,.14,.38,.25,.20,.32,.16,.36,.24,.12,.28,.40,.18,.30,.22,.16,.34,.26,.20,.38];
-            return <div key={i} className="g-cell" style={{opacity:ops[i]}} />;
-          })}
-        </div>
+
 
         {/* ══ COUCHE 2 — HALO DU TRAJET ══ */}
 
