@@ -257,47 +257,40 @@ export default function PlanningPage() {
   const ARM_MS   = 350; // ms de maintien avant activation du drag
 
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
-    if (e.button === 2) return;          // clic droit → laisser onContextMenu gérer
-    if (e.pointerType === 'touch') {     // tablette → ouvrir directement
-      setEditRdv(rdv); setShowModal(true); return;
-    }
-
+    if (e.button === 2) return;
+    if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
     e.stopPropagation();
-    // Capturer le pointer pour recevoir les events même si la souris sort de l'élément
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     const startX = e.clientX, startY = e.clientY;
-
-    const armTimer = setTimeout(() => {
-      if (dragState.current && !dragState.current.moved) {
-        dragState.current.armed = true;
-        document.body.style.cursor = 'grabbing';
-      }
-    }, ARM_MS);
+    const rect = container.getBoundingClientRect();
 
     dragState.current = {
-      rdv, rect: container.getBoundingClientRect(), days,
-      startX, startY, moved: false, armed: false, armTimer,
+      rdv, rect, days,
+      startX, startY, moved: false, armed: false,
+      armTimer: setTimeout(() => {
+        if (dragState.current) {
+          dragState.current.armed = true;
+          document.body.style.cursor = 'grabbing';
+        }
+      }, ARM_MS),
     };
 
-    const onPointerMove = (mv: PointerEvent) => {
-      if (!dragState.current || mv.pointerId !== e.pointerId) return;
+    function onMove(mv: MouseEvent) {
+      if (!dragState.current) return;
       const dx = mv.clientX - startX, dy = mv.clientY - startY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // Mouvement avant armement → annuler le timer de drag
-      if (!dragState.current.armed && dist > 3 && dragState.current.armTimer) {
-        clearTimeout(dragState.current.armTimer);
-        dragState.current.armTimer = null;
+      if (!dragState.current.armed) {
+        if (dist > 4 && dragState.current.armTimer) {
+          clearTimeout(dragState.current.armTimer);
+          dragState.current.armTimer = null;
+        }
         return;
       }
-
-      if (dragState.current.armed && dist > DRAG_PX && !dragState.current.moved) {
+      if (!dragState.current.moved && dist > DRAG_PX) {
         dragState.current.moved = true;
         createGhost(rdv, mv.clientX, mv.clientY);
         setDraggingId(rdv.id);
       }
-
       if (dragState.current.moved && ghostRef.current) {
         ghostRef.current.style.left = `${mv.clientX}px`;
         ghostRef.current.style.top  = `${mv.clientY}px`;
@@ -309,24 +302,19 @@ export default function PlanningPage() {
           hEl.textContent = `${fmtH(t)} – ${fmtH(minutesToTime(Math.min(mins + rdv.duree_minutes, 23 * 60)))}`;
         }
       }
-    };
+    }
 
-    const onPointerUp = async (up: PointerEvent) => {
-      if (up.pointerId !== e.pointerId) return;
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
+    async function onUp(up: MouseEvent) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       document.body.style.cursor = '';
-
       if (!dragState.current) { setDraggingId(null); return; }
       if (dragState.current.armTimer) clearTimeout(dragState.current.armTimer);
-
-      const { rdv: r, rect, days: ds, moved } = dragState.current;
+      const { rdv: r, days: ds, moved } = dragState.current;
       removeGhost();
       setDraggingId(null);
       dragState.current = null;
-
-      if (!moved) return; // clic simple ou maintien court → rien
-
+      if (!moved) return;
       const relY  = up.clientY - rect.top;
       const mins  = snapTo15(Math.max(DAY_START * 60, DAY_START * 60 + Math.round(relY / HOUR_HEIGHT * 60)));
       const newH  = minutesToTime(Math.min(mins, 22 * 60));
@@ -338,12 +326,10 @@ export default function PlanningPage() {
         newDate = toISODate(ds[Math.max(0, Math.min(ds.length - 1, Math.floor(relX / colW)))]);
       }
       if (newH === r.heure_debut && newDate === r.date) return;
-
       const { data, error } = await supabase
         .from('rendez_vous')
         .update({ date: newDate, heure_debut: newH, heure_fin: newF })
         .eq('id', r.id).select('*, patient:patients(*)').single();
-
       if (error) toast.error('Erreur déplacement');
       else {
         const updated = data as unknown as RendezVous;
@@ -351,10 +337,10 @@ export default function PlanningPage() {
         updateRendezVous(updated);
         toast.success(`Déplacé → ${fmtH(newH)}`);
       }
-    };
+    }
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }, [pushHistory, updateRendezVous]);
 
   // ── Travel badge ──

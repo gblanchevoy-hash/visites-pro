@@ -78,13 +78,13 @@ function AuthInner() {
         .h1{position:absolute;pointer-events:none;border-radius:50%;
           width:900px;height:900px;
           right:-200px;top:50%;transform:translateY(-50%);
-          background:radial-gradient(circle,rgba(79,125,255,.13) 0%,transparent 70%);
-          filter:blur(320px);z-index:0;}
+          background:radial-gradient(circle,rgba(59,110,255,.28) 0%,rgba(79,125,255,.16) 35%,transparent 70%);
+          filter:blur(260px);z-index:0;}
         .h2{position:absolute;pointer-events:none;border-radius:50%;
           width:700px;height:700px;
           left:20%;top:10%;
-          background:radial-gradient(circle,rgba(79,125,255,.09) 0%,transparent 65%);
-          filter:blur(400px);z-index:0;
+          background:radial-gradient(circle,rgba(59,110,255,.18) 0%,transparent 65%);
+          filter:blur(350px);z-index:0;
           animation:breathe 8s ease-in-out infinite;}
         .h3{position:absolute;pointer-events:none;border-radius:50%;
           width:500px;height:400px;
@@ -319,16 +319,16 @@ function AuthInner() {
             className="route-path"
             d="M 100 10 C 40 60 160 120 120 200 C 80 280 40 320 80 400 C 120 480 160 520 130 600 C 100 680 60 720 90 790"
             stroke="#7AADFF"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
-            strokeDasharray="9 7"
-            opacity=".75"
+            strokeDasharray="8 6"
+            opacity=".85"
           />
         </svg>
 
         {/* ══ COUCHE 4 — MARQUEURS GPS ══ */}
         {/* Destination — grand pin en haut */}
-        <div className="marker" style={{left:'50%',top:'12%'}}>
+        <div className="marker" style={{left:'49%',top:'9%'}}>
           <div className="m-glow" style={{width:'70px',height:'70px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
           <svg width="42" height="52" viewBox="0 0 42 52" fill="none" style={{position:'relative',zIndex:1,filter:'drop-shadow(0 4px 14px rgba(59,110,255,.35))'}}>
             <path d="M21 0C9.402 0 0 9.402 0 21C0 32.598 21 52 21 52C21 52 42 32.598 42 21C42 9.402 32.598 0 21 0Z" fill="#3B6EFF"/>
@@ -338,7 +338,7 @@ function AuthInner() {
           <div style={{width:'20px',height:'7px',borderRadius:'50%',background:'rgba(59,110,255,.30)',margin:'3px auto 0',filter:'blur(4px)'}}/>
         </div>
         {/* Étape 1 */}
-        <div className="marker" style={{left:'44%',top:'42%'}}>
+        <div className="marker" style={{left:'50.4%',top:'19.9%'}}>
           <div className="m-glow" style={{width:'46px',height:'46px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
           <div className="m-ring" style={{width:'34px',height:'34px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
           <div className="m-dot" style={{width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',background:'#EFF6FF',border:'2px solid rgba(59,110,255,.6)',boxShadow:'0 0 16px rgba(59,110,255,.30)'}}>
@@ -346,7 +346,7 @@ function AuthInner() {
           </div>
         </div>
         {/* Étape 2 */}
-        <div className="marker" style={{left:'53%',top:'65%'}}>
+        <div className="marker" style={{left:'45.4%',top:'40.4%'}}>
           <div className="m-glow" style={{width:'40px',height:'40px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
           <div className="m-ring" style={{width:'30px',height:'30px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
           <div className="m-dot" style={{width:'16px',height:'16px',display:'flex',alignItems:'center',justifyContent:'center',background:'#EFF6FF',border:'2px solid rgba(59,110,255,.55)',boxShadow:'0 0 14px rgba(59,110,255,.25)'}}>
