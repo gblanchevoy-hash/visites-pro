@@ -8,15 +8,17 @@ function AuthInner() {
   const router = useRouter();
   const params = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
-  const [email, setEmail]     = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [pseudonyme, setPseudo] = useState('');
   const [showPwd, setShowPwd]   = useState(false);
   const [loading, setLoading]   = useState(false);
+  const [ready, setReady]       = useState(false);
 
   useEffect(() => {
-    if (params.get('reason') === 'inactivity')
-      toast('Déconnecté pour inactivité', { icon: '🔒' });
+    if (params.get('reason') === 'inactivity') toast('Déconnecté pour inactivité', { icon: '🔒' });
+    const t = setTimeout(() => setReady(true), 60);
+    return () => clearTimeout(t);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,505 +62,408 @@ function AuthInner() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        html,body{height:100%;overflow:hidden;}
 
-        /* ════════════════════════════════════════
-           COUCHE 0 — FOND MULTI-RADIAL
-        ════════════════════════════════════════ */
-        .auth-root {
-          font-family: 'Inter', -apple-system, sans-serif;
-          width: 100vw; height: 100vh; overflow: hidden;
-          position: relative;
-          background:
-            radial-gradient(circle at 65% 50%, rgba(219,234,254,.55), transparent 40%),
-            radial-gradient(circle at 15% 20%, rgba(96,165,250,.05), transparent 35%),
-            linear-gradient(180deg, #FFFFFF, #FCFCFD);
+        /* ─── ROOT ─── */
+        .p{
+          font-family:'Inter',-apple-system,sans-serif;
+          width:100vw;height:100vh;overflow:hidden;
+          background:#FFFFFF;
+          position:relative;
         }
 
-        /* ════════════════════════════════════════
-           COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE
-           Très discrète, jamais lisible
-        ════════════════════════════════════════ */
-        .layer-map {
-          position: absolute;
-          left: 30%; top: 8%;
-          width: 45%; height: 84%;
-          z-index: 1;
-          opacity: 0.06;
-          filter: blur(3px);
-          pointer-events: none;
+        /* ─── HALOS LUMINEUX ─── */
+        .h1{position:absolute;pointer-events:none;border-radius:50%;
+          width:900px;height:900px;
+          right:-200px;top:50%;transform:translateY(-50%);
+          background:radial-gradient(circle,rgba(79,125,255,.13) 0%,transparent 70%);
+          filter:blur(320px);z-index:0;}
+        .h2{position:absolute;pointer-events:none;border-radius:50%;
+          width:700px;height:700px;
+          left:20%;top:10%;
+          background:radial-gradient(circle,rgba(79,125,255,.09) 0%,transparent 65%);
+          filter:blur(400px);z-index:0;
+          animation:breathe 8s ease-in-out infinite;}
+        .h3{position:absolute;pointer-events:none;border-radius:50%;
+          width:500px;height:400px;
+          left:5%;bottom:0%;
+          background:radial-gradient(circle,rgba(79,125,255,.07) 0%,transparent 70%);
+          filter:blur(280px);z-index:0;}
+
+        @keyframes breathe{
+          0%,100%{opacity:1;transform:scale(1);}
+          50%{opacity:.65;transform:scale(1.08);}
         }
 
-        /* ════════════════════════════════════════
-           COUCHE 2 — SVG ITINÉRAIRE
-           Chemin organique avec courbes S
-        ════════════════════════════════════════ */
-
-
-        /* ════════════════════════════════════════
-           COUCHE 3 — HALOS LUMINEUX
-           Derrière la carte de connexion
-        ════════════════════════════════════════ */
-        .halo-main {
-          position: absolute;
-          right: -80px; top: 50%;
-          transform: translateY(-50%);
-          width: 1000px; height: 1000px;
-          border-radius: 50%;
-          background: radial-gradient(
-            circle,
-            rgba(59,130,246,.38) 0%,
-            rgba(96,165,250,.24) 25%,
-            rgba(147,197,253,.12) 50%,
-            rgba(255,255,255,0) 72%
-          );
-          filter: blur(70px);
-          opacity: 1;
-          z-index: 3;
-          pointer-events: none;
+        /* ─── GRILLE CENTRALE (zone entre texte et formulaire) ─── */
+        .grid-zone{
+          position:absolute;
+          left:38%;top:12%;
+          width:24%;height:76%;
+          z-index:1;
+          pointer-events:none;
+          display:grid;
+          grid-template-columns:repeat(5,70px);
+          grid-template-rows:repeat(5,70px);
+          gap:14px;
+          justify-content:center;
+          align-content:center;
         }
-        .halo-mid {
-          position: absolute;
-          right: 60px; top: 42%;
-          width: 700px; height: 700px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(37,99,235,.28), transparent 68%);
-          filter: blur(100px);
-          z-index: 3;
-          pointer-events: none;
-        }
-        .halo-soft {
-          position: absolute;
-          right: -40px; top: 15%;
-          width: 900px; height: 800px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(191,219,254,.55), transparent 65%);
-          filter: blur(140px);
-          z-index: 3;
-          pointer-events: none;
+        .g-cell{
+          width:70px;height:70px;border-radius:10px;
+          background:#F7F9FC;
+          backdrop-filter:blur(4px);
         }
 
-        /* ════════════════════════════════════════
-           COUCHE 4 — MARQUEURS GPS
-           3 couches par marqueur : icône + anneau + halo
-        ════════════════════════════════════════ */
-
-
-        /* ════════════════════════════════════════
-           COUCHE 5 — LAYOUT & CONTENU
-        ════════════════════════════════════════ */
-        .layout {
-          position: relative; z-index: 10;
-          width: 100%; height: 100%;
-          display: flex; flex-direction: column;
+        /* ─── HALO DU TRAJET ─── */
+        .route-glow{
+          position:absolute;
+          left:42%;top:10%;
+          width:200px;height:80%;
+          z-index:2;pointer-events:none;
+          background:linear-gradient(180deg,
+            rgba(79,125,255,.20) 0%,
+            rgba(79,125,255,.12) 40%,
+            rgba(79,125,255,.08) 70%,
+            transparent 100%);
+          filter:blur(30px);
+          opacity:.20;
         }
 
-        /* Logo */
-        .logo {
-          position: absolute;
-          top: 48px; left: 56px;
-          display: flex; align-items: center; gap: 12px;
-          animation: fadeUp 500ms ease both;
-        }
-        .logo-mark {
-          width: 40px; height: 40px; border-radius: 12px;
-          background: #2563EB;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 14px rgba(37,99,235,.30);
-          flex-shrink: 0;
-        }
-        .logo-text-name { font-size: 17px; font-weight: 800; color: #0F172A; letter-spacing: -0.3px; line-height: 1; }
-        .logo-text-sub  { font-size: 11px; color: #94A3B8; margin-top: 2px; }
-
-        /* Grid */
-        .grid {
-          flex: 1;
-          display: grid;
-          grid-template-columns: 58% 42%;
-          padding: 80px 72px 40px 64px;
-          align-items: center;
-          gap: 0;
+        /* ─── TRAJET SVG ─── */
+        .route-svg{
+          position:absolute;
+          left:38%;top:8%;
+          width:22%;height:84%;
+          z-index:3;pointer-events:none;
+          filter:drop-shadow(0 0 14px rgba(79,125,255,.30));
         }
 
-        /* Left */
-        .col-left { padding-right: 72px; display: flex; flex-direction: column; gap: 0; }
+        /* ─── MARQUEURS GPS ─── */
+        .marker{position:absolute;z-index:4;pointer-events:none;transform:translate(-50%,-50%);}
+        .m-glow{position:absolute;border-radius:50%;background:rgba(79,125,255,.22);filter:blur(18px);}
+        .m-ring{position:absolute;border-radius:50%;border:2px solid rgba(79,125,255,.55);box-shadow:0 0 18px rgba(79,125,255,.28);}
+        .m-dot{border-radius:50%;background:#5B8EFF;position:relative;}
 
-        .badge {
-          display: inline-flex; align-items: center;
-          height: 40px; padding: 0 20px;
-          border-radius: 999px;
-          background: #EFF6FF;
-          border: 1px solid rgba(191,219,254,.8);
-          font-size: 13px; font-weight: 600;
-          letter-spacing: 0.08em; color: #2563EB;
-          text-transform: uppercase;
-          width: fit-content;
-          margin-bottom: 28px;
-          animation: fadeUp 500ms 80ms ease both;
-        }
+        /* ─── LAYOUT ─── */
+        .lay{position:relative;z-index:10;width:100%;height:100%;display:flex;flex-direction:column;}
+        .logo-bar{padding:36px 56px 0;display:flex;align-items:center;gap:12px;
+          animation:fadeUp .6s ease both;}
+        .logo-ic{width:40px;height:40px;border-radius:12px;background:#3B6EFF;
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 4px 16px rgba(59,110,255,.30);flex-shrink:0;}
+        .logo-n{font-size:17px;font-weight:800;color:#0F172A;letter-spacing:-.3px;line-height:1;}
+        .logo-s{font-size:11px;color:#94A3B8;margin-top:2px;}
 
-        .headline {
-          font-size: 66px; font-weight: 900;
-          line-height: 72px; letter-spacing: -2.5px;
-          margin-bottom: 22px;
-          animation: fadeUp 500ms 120ms ease both;
-        }
-        .headline-l1 { display: block; color: #0F172A; }
-        .headline-l2 { display: block; color: #2563EB; }
+        /* ─── MAIN GRID ─── */
+        .main{flex:1;display:grid;grid-template-columns:58% 42%;padding:0 64px 0 56px;align-items:center;}
 
-        .desc {
-          font-size: 18px; font-weight: 400;
-          line-height: 1.6; color: #64748B;
-          max-width: 520px;
-          margin-bottom: 44px;
-          animation: fadeUp 500ms 160ms ease both;
+        /* ─── COLONNE GAUCHE ─── */
+        .cl{display:flex;flex-direction:column;padding-right:0;}
+
+        .badge{
+          display:inline-flex;align-items:center;height:38px;padding:0 18px;
+          border-radius:999px;background:#EFF6FF;border:1px solid #BFDBFE;
+          font-size:12px;font-weight:600;letter-spacing:.09em;color:#3B6EFF;
+          text-transform:uppercase;width:fit-content;margin-bottom:40px;
+          animation:fadeUp .5s .1s ease both;
         }
 
-        /* Feature cards */
-        .cards { display: flex; gap: 20px; }
-        .card {
-          flex: 1;
-          border-radius: 28px;
-          background: #FFFFFF;
-          border: 1px solid #F1F5F9;
-          box-shadow: 0 30px 90px rgba(15,23,42,.06);
-          padding: 26px 22px;
-          display: flex; flex-direction: column;
-          cursor: default;
-          transition: transform 250ms ease, box-shadow 250ms ease;
+        .hl{
+          font-size:62px;font-weight:900;line-height:68px;letter-spacing:-2.5px;
+          margin-bottom:24px;
+          animation:fadeUp .5s .15s ease both;
         }
-        .card:nth-child(1) { animation: fadeUp 500ms 200ms ease both; }
-        .card:nth-child(2) { animation: fadeUp 500ms 280ms ease both; }
-        .card:nth-child(3) { animation: fadeUp 500ms 360ms ease both; }
-        .card:hover { transform: translateY(-6px); box-shadow: 0 40px 100px rgba(15,23,42,.10); }
-        .card-icon {
-          width: 56px; height: 56px; border-radius: 16px;
-          background: #EFF6FF;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 18px; flex-shrink: 0;
-        }
-        .card-title { font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 7px; line-height: 1.3; }
-        .card-desc  { font-size: 13px; color: #64748B; line-height: 1.5; }
+        .hl1{display:block;color:#0F172A;}
+        .hl2{display:block;color:#3B6EFF;}
 
-        /* Right */
-        .col-right { display: flex; align-items: center; justify-content: center; }
-
-        /* ════════════════════════════════════════
-           COUCHE 6 — FORMULAIRE
-           La carte flotte grâce aux ombres
-        ════════════════════════════════════════ */
-        .form-card {
-          width: 460px;
-          border-radius: 36px;
-          background: #FFFFFF;
-          border: 1px solid rgba(255,255,255,.65);
-          box-shadow: 0 45px 120px rgba(15,23,42,.10), 0 8px 32px rgba(15,23,42,.04);
-          padding: 44px 40px;
-          animation: fadeUp 500ms 120ms ease both;
+        .desc{
+          font-size:18px;color:#64748B;line-height:1.65;max-width:440px;
+          margin-bottom:56px;
+          animation:fadeUp .5s .2s ease both;
         }
 
-        .form-h1  { font-size: 38px; font-weight: 900; color: #0F172A; letter-spacing: -1px; margin-bottom: 5px; }
-        .form-sub { font-size: 16px; color: #94A3B8; margin-bottom: 32px; }
+        /* ─── FEATURE CARDS ─── */
+        .cards{display:flex;gap:18px;}
+        .card{
+          flex:1;border-radius:28px;
+          background:#FFFFFF;
+          border:1px solid rgba(226,232,240,.8);
+          box-shadow:0 12px 40px rgba(15,23,42,.05),0 2px 8px rgba(15,23,42,.03);
+          padding:28px 22px 24px;
+          display:flex;flex-direction:column;
+          transition:transform .25s ease,box-shadow .25s ease;
+          cursor:default;
+          animation:fadeUp .5s ease both;
+        }
+        .card:nth-child(1){animation-delay:.22s;}
+        .card:nth-child(2){animation-delay:.30s;}
+        .card:nth-child(3){animation-delay:.38s;}
+        .card:hover{transform:translateY(-5px);box-shadow:0 24px 60px rgba(15,23,42,.09);}
+        .ci{width:52px;height:52px;border-radius:14px;background:#EFF6FF;
+          display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0;}
+        .ct{font-size:14px;font-weight:700;color:#0F172A;margin-bottom:7px;line-height:1.3;}
+        .cd{font-size:13px;color:#64748B;line-height:1.55;}
 
-        .field       { margin-bottom: 14px; }
-        .field-label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 7px; }
-        .field-wrap  { position: relative; }
-        .field-icon  {
-          position: absolute; left: 18px; top: 50%;
-          transform: translateY(-50%);
-          color: #94A3B8; pointer-events: none;
-          display: flex; align-items: center;
-        }
-        .field-input {
-          width: 100%; height: 62px;
-          border-radius: 16px;
-          background: #F8FAFC;
-          border: 1.5px solid #E2E8F0;
-          padding: 0 18px 0 50px;
-          font-size: 15px; font-family: inherit; color: #0F172A;
-          outline: none;
-          transition: border-color 200ms, box-shadow 200ms;
-        }
-        .field-input::placeholder { color: #94A3B8; }
-        .field-input:focus {
-          border-color: #2563EB;
-          box-shadow: 0 0 0 3px rgba(37,99,235,.10);
-          background: #FFFFFF;
-        }
-        .field-eye {
-          position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-          background: none; border: none; cursor: pointer;
-          color: #94A3B8; display: flex; align-items: center;
-          transition: color 150ms;
-        }
-        .field-eye:hover { color: #475569; }
+        /* ─── COLONNE DROITE — FORMULAIRE ─── */
+        .cr{display:flex;align-items:center;justify-content:center;}
 
-        .btn-primary {
-          width: 100%; height: 62px;
-          border-radius: 16px;
-          background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
-          border: none; color: #FFFFFF;
-          font-size: 16px; font-weight: 700; font-family: inherit;
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-          box-shadow: 0 8px 28px rgba(37,99,235,.32);
-          transition: transform 250ms ease, box-shadow 250ms ease, opacity 250ms;
-          margin-top: 6px; letter-spacing: -0.2px;
+        .fc{
+          width:440px;border-radius:36px;
+          background:#FFFFFF;
+          border:1px solid rgba(226,232,240,.5);
+          box-shadow:0 30px 90px rgba(35,70,180,.08),0 4px 16px rgba(15,23,42,.04);
+          padding:48px 44px;
+          animation:formUp .65s .05s ease both;
         }
-        .btn-primary:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 14px 36px rgba(37,99,235,.42);
-          opacity: .97;
-        }
-        .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
-
-        .form-links { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
-        .lnk {
-          background: none; border: none; font-family: inherit;
-          font-size: 14px; font-weight: 500; color: #2563EB;
-          cursor: pointer; transition: opacity 150ms;
-        }
-        .lnk:hover { opacity: .72; }
-        .lnk-muted { font-size: 14px; color: #94A3B8; }
-        .lnk-muted .lnk { font-size: 14px; }
-
-        /* Footer */
-        .footer {
-          position: relative; z-index: 10;
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 0 64px 22px;
-        }
-        .footer span, .footer a { font-size: 14px; color: #94A3B8; text-decoration: none; }
-        .footer-links { display: flex; gap: 28px; }
-        .footer a:hover { color: #64748B; }
-
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes formUp{
+          from{opacity:0;transform:translateY(10px);}
+          to{opacity:1;transform:translateY(0);}
         }
 
-        @media (max-width: 1199px) {
-          .headline { font-size: 50px; line-height: 56px; }
-          .grid { padding: 80px 48px 40px; }
-          .col-left { padding-right: 48px; }
-          .form-card { width: 420px; padding: 36px 32px; }
+        .fh{font-size:36px;font-weight:900;color:#0F172A;letter-spacing:-1px;margin-bottom:5px;}
+        .fs{font-size:16px;color:#94A3B8;margin-bottom:32px;}
+
+        .field{margin-bottom:14px;}
+        .fl{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:7px;}
+        .fw{position:relative;}
+        .fi{
+          width:100%;height:62px;border-radius:18px;
+          background:#F3F6FD;
+          border:1.5px solid transparent;
+          padding:0 18px 0 50px;
+          font-size:15px;font-family:inherit;color:#0F172A;
+          outline:none;transition:border-color .18s,box-shadow .18s,background .18s;
         }
-        @media (max-width: 1023px) {
-          html, body { overflow: auto; }
-          .auth-root { height: auto; min-height: 100vh; }
-          .grid { grid-template-columns: 1fr; padding: 80px 32px 32px; gap: 40px; }
-          .col-left { padding-right: 0; }
-          .form-card { width: 100%; max-width: 460px; }
-          .cards { flex-wrap: wrap; }
-          .card { min-width: 180px; }
-          .halo-main, .halo-mid, .halo-soft { display: none; }
+        .fi::placeholder{color:#94A3B8;}
+        .fi:focus{border-color:#3B6EFF;background:#FFFFFF;box-shadow:0 0 0 3px rgba(59,110,255,.10);}
+        .fic{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:#94A3B8;pointer-events:none;display:flex;align-items:center;}
+        .eye{position:absolute;right:16px;top:50%;transform:translateY(-50%);
+          background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;
+          transition:color .15s;}
+        .eye:hover{color:#475569;}
+
+        .btn{
+          width:100%;height:60px;border-radius:18px;
+          background:linear-gradient(175deg,#3C73FF 0%,#2D5DE8 100%);
+          border:none;color:#FFFFFF;
+          font-size:16px;font-weight:700;font-family:inherit;
+          cursor:pointer;letter-spacing:-.2px;
+          display:flex;align-items:center;justify-content:center;gap:10px;
+          box-shadow:0 8px 28px rgba(59,110,255,.32),0 2px 6px rgba(59,110,255,.18);
+          transition:transform .22s ease,box-shadow .22s ease,opacity .15s;
+          margin-top:6px;
+        }
+        .btn:hover:not(:disabled){
+          transform:translateY(-2px);
+          box-shadow:0 14px 40px rgba(59,110,255,.42),0 4px 10px rgba(59,110,255,.22);
+        }
+        .btn:disabled{opacity:.6;cursor:not-allowed;}
+
+        .links{margin-top:22px;display:flex;flex-direction:column;gap:10px;text-align:center;}
+        .lk{background:none;border:none;font-family:inherit;font-size:14px;font-weight:500;color:#3B6EFF;cursor:pointer;transition:opacity .15s;}
+        .lk:hover{opacity:.72;}
+        .lkm{font-size:14px;color:#94A3B8;}
+
+        /* ─── FOOTER ─── */
+        .ft{position:relative;z-index:10;display:flex;justify-content:space-between;
+          align-items:center;padding:0 56px 22px;}
+        .ft span,.ft a{font-size:13px;color:#94A3B8;text-decoration:none;}
+        .ftl{display:flex;gap:24px;}
+        .ft a:hover{color:#64748B;}
+
+        @keyframes fadeUp{
+          from{opacity:0;transform:translateY(14px);}
+          to{opacity:1;transform:translateY(0);}
+        }
+
+        /* ─── ANIMATION TRAJET ─── */
+        .route-path{stroke-dasharray:1200;stroke-dashoffset:1200;animation:drawRoute 2.2s .3s ease forwards;}
+        @keyframes drawRoute{to{stroke-dashoffset:0;}}
+
+        @media(max-width:1199px){
+          .hl{font-size:48px;line-height:54px;}
+          .main{padding:0 40px;}
+        }
+        @media(max-width:1023px){
+          html,body{overflow:auto;}
+          .p{height:auto;min-height:100vh;}
+          .main{grid-template-columns:1fr;padding:80px 28px 32px;gap:48px;}
+          .fc{width:100%;max-width:440px;}
+          .grid-zone,.route-svg,.route-glow,.h1,.h2,.h3{display:none;}
         }
       `}</style>
 
-      {/* ════ COUCHE 0 — ROOT ════ */}
-      <div className="auth-root">
+      <div className="p">
+        {/* ══ COUCHE 0 — HALOS LUMINEUX ══ */}
+        <div className="h1" />
+        <div className="h2" />
+        <div className="h3" />
 
-        {/* ════ COUCHE 1 — CARTE VECTORIELLE SUGGÉRÉE ════ */}
-
-
-
-
-        {/* ════ COUCHE 3 — HALOS LUMINEUX ════ */}
-        <div className="halo-main" />
-        <div className="halo-mid"  />
-        <div className="halo-soft" />
-
-        {/* ════ COUCHE 4 — MARQUEURS GPS ════ */}
-        {/* Marqueurs GPS sur le tracé Bézier — positions mathématiques exactes */}
-        <div className="gps-marker" style={{ left:'43.1%', top:'9.7%' }}>
-          <div className="gps-halo" />
-          <div className="gps-ring" />
-          <div className="gps-pin" />
-        </div>
-        <div className="gps-marker" style={{ left:'73.9%', top:'28.2%' }}>
-          <div className="gps-halo" />
-          <div className="gps-ring" />
-          <div className="gps-pin" />
-        </div>
-        <div className="gps-marker" style={{ left:'66.2%', top:'61.2%' }}>
-          <div className="gps-halo" />
-          <div className="gps-ring" />
-          <div className="gps-pin" />
+        {/* ══ COUCHE 1 — GRILLE CENTRALE ══ */}
+        <div className="grid-zone" aria-hidden="true">
+          {Array.from({length:25}).map((_,i) => {
+            const ops = [.40,.28,.18,.35,.22,.30,.14,.38,.25,.20,.32,.16,.36,.24,.12,.28,.40,.18,.30,.22,.16,.34,.26,.20,.38];
+            return <div key={i} className="g-cell" style={{opacity:ops[i]}} />;
+          })}
         </div>
 
-        {/* ════ COUCHE 5 — CONTENU ════ */}
-        <div className="layout">
+        {/* ══ COUCHE 2 — HALO DU TRAJET ══ */}
+        <div className="route-glow" />
 
+        {/* ══ COUCHE 3 — TRAJET SVG ══ */}
+        <svg className="route-svg" viewBox="0 0 200 800" fill="none" preserveAspectRatio="none">
+          <path
+            className="route-path"
+            d="M 100 10 C 40 60 160 120 120 200 C 80 280 40 320 80 400 C 120 480 160 520 130 600 C 100 680 60 720 90 790"
+            stroke="#7AADFF"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="9 7"
+            opacity=".75"
+          />
+        </svg>
+
+        {/* ══ COUCHE 4 — MARQUEURS GPS ══ */}
+        {/* Destination — grand pin en haut */}
+        <div className="marker" style={{left:'50%',top:'12%'}}>
+          <div className="m-glow" style={{width:'70px',height:'70px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
+          <svg width="42" height="52" viewBox="0 0 42 52" fill="none" style={{position:'relative',zIndex:1,filter:'drop-shadow(0 4px 14px rgba(59,110,255,.35))'}}>
+            <path d="M21 0C9.402 0 0 9.402 0 21C0 32.598 21 52 21 52C21 52 42 32.598 42 21C42 9.402 32.598 0 21 0Z" fill="#3B6EFF"/>
+            <circle cx="21" cy="21" r="9" fill="white"/>
+            <circle cx="21" cy="21" r="5" fill="#3B6EFF"/>
+          </svg>
+          <div style={{width:'20px',height:'7px',borderRadius:'50%',background:'rgba(59,110,255,.30)',margin:'3px auto 0',filter:'blur(4px)'}}/>
+        </div>
+        {/* Étape 1 */}
+        <div className="marker" style={{left:'44%',top:'42%'}}>
+          <div className="m-glow" style={{width:'46px',height:'46px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
+          <div className="m-ring" style={{width:'34px',height:'34px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
+          <div className="m-dot" style={{width:'18px',height:'18px',display:'flex',alignItems:'center',justifyContent:'center',background:'#EFF6FF',border:'2px solid rgba(59,110,255,.6)',boxShadow:'0 0 16px rgba(59,110,255,.30)'}}>
+            <div style={{width:'7px',height:'7px',borderRadius:'50%',background:'#3B6EFF'}}/>
+          </div>
+        </div>
+        {/* Étape 2 */}
+        <div className="marker" style={{left:'53%',top:'65%'}}>
+          <div className="m-glow" style={{width:'40px',height:'40px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
+          <div className="m-ring" style={{width:'30px',height:'30px',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}/>
+          <div className="m-dot" style={{width:'16px',height:'16px',display:'flex',alignItems:'center',justifyContent:'center',background:'#EFF6FF',border:'2px solid rgba(59,110,255,.55)',boxShadow:'0 0 14px rgba(59,110,255,.25)'}}>
+            <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'#3B6EFF'}}/>
+          </div>
+        </div>
+
+        {/* ══ COUCHE 5 — CONTENU ══ */}
+        <div className="lay">
           {/* Logo */}
-          <div className="logo">
-            <div className="logo-mark">
+          <div className="logo-bar">
+            <div className="logo-ic">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
               </svg>
             </div>
             <div>
-              <div className="logo-text-name">Itilib</div>
-              <div className="logo-text-sub">Visites à domicile</div>
+              <div className="logo-n">Itilib</div>
+              <div className="logo-s">Visites à domicile</div>
             </div>
           </div>
 
-          {/* Grid */}
-          <div className="grid">
+          {/* Main */}
+          <div className="main">
+            {/* ─ Colonne gauche ─ */}
+            <div className="cl">
+              <div className="badge">Plateforme professionnelle</div>
 
-            {/* Left */}
-            <div className="col-left">
-              {/* Top section: text left + route right */}
-              <div style={{ display:'flex', alignItems:'flex-start', gap:'0', marginBottom:'0' }}>
-                {/* Text block */}
-                <div style={{ flex:'1', minWidth:0 }}>
-                  <div className="badge">Plateforme professionnelle</div>
-                  <h1 className="headline">
-                    <span className="headline-l1">Simplifiez vos visites</span>
-                    <span className="headline-l2">à domicile.</span>
-                  </h1>
-                  <p className="desc">
-                    Planification, cartographie et kilométrage optimisés<br/>
-                    pour les professionnels de santé.
-                  </p>
-                </div>
+              <h1 className="hl">
+                <span className="hl1">Simplifiez vos visites</span>
+                <span className="hl2">à domicile.</span>
+              </h1>
 
-                {/* Vertical route — positioned right of text, like gg.jpg */}
-                <div style={{ width:'260px', flexShrink:0, position:'relative', height:'340px', marginLeft:'-20px' }}>
-                  {/* Subtle map grid behind */}
-                  <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0.07 }} viewBox="0 0 260 340" fill="none">
-                    <rect x="20" y="30" width="65" height="60" rx="6" fill="#94A3B8"/>
-                    <rect x="100" y="20" width="70" height="55" rx="6" fill="#94A3B8"/>
-                    <rect x="185" y="35" width="60" height="50" rx="6" fill="#94A3B8"/>
-                    <rect x="15" y="140" width="70" height="55" rx="6" fill="#94A3B8"/>
-                    <rect x="100" y="130" width="65" height="60" rx="6" fill="#94A3B8"/>
-                    <rect x="180" y="145" width="65" height="50" rx="6" fill="#94A3B8"/>
-                    <rect x="20" y="250" width="65" height="55" rx="6" fill="#94A3B8"/>
-                    <rect x="100" y="245" width="70" height="60" rx="6" fill="#94A3B8"/>
-                    <rect x="185" y="255" width="60" height="50" rx="6" fill="#94A3B8"/>
-                  </svg>
-                  {/* Vertical winding route */}
-                  <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', filter:'drop-shadow(0 0 10px rgba(96,165,250,0.40))' }} viewBox="0 0 260 340" fill="none">
-                    <path
-                      d="M 130 320 C 80 290 60 240 90 200 C 120 160 170 155 150 110 C 130 65 80 55 110 20"
-                      stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="10 8" opacity="0.75"
-                    />
-                  </svg>
-                  {/* Marker bottom — small circle */}
-                  <div style={{ position:'absolute', left:'50%', top:'93%', transform:'translate(-50%,-50%)' }}>
-                    <div style={{ position:'absolute', width:'40px', height:'40px', borderRadius:'50%', background:'rgba(91,142,255,0.2)', filter:'blur(10px)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
-                    <div style={{ position:'relative', width:'20px', height:'20px', borderRadius:'50%', border:'2px solid rgba(91,142,255,0.6)', background:'rgba(219,234,254,0.85)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 14px rgba(91,142,255,0.35)' }}>
-                      <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#5B8EFF' }} />
-                    </div>
-                  </div>
-                  {/* Marker mid — small circle */}
-                  <div style={{ position:'absolute', left:'40%', top:'55%', transform:'translate(-50%,-50%)' }}>
-                    <div style={{ position:'absolute', width:'40px', height:'40px', borderRadius:'50%', background:'rgba(91,142,255,0.2)', filter:'blur(10px)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />
-                    <div style={{ position:'relative', width:'20px', height:'20px', borderRadius:'50%', border:'2px solid rgba(91,142,255,0.6)', background:'rgba(219,234,254,0.85)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 14px rgba(91,142,255,0.35)' }}>
-                      <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#5B8EFF' }} />
-                    </div>
-                  </div>
-                  {/* Marker top — GPS pin (destination) */}
-                  <div style={{ position:'absolute', left:'42%', top:'2%', transform:'translateX(-50%)' }}>
-                    <div style={{ position:'absolute', width:'64px', height:'64px', borderRadius:'50%', background:'rgba(91,142,255,0.20)', filter:'blur(18px)', top:'50%', left:'50%', transform:'translate(-50%,-30%)' }} />
-                    <svg width="36" height="46" viewBox="0 0 36 46" fill="none">
-                      <path d="M18 0C8.059 0 0 8.059 0 18C0 27.941 18 46 18 46C18 46 36 27.941 36 18C36 8.059 27.941 0 18 0Z" fill="#5B8EFF"/>
-                      <circle cx="18" cy="18" r="8" fill="white"/>
-                      <circle cx="18" cy="18" r="4.5" fill="#5B8EFF"/>
-                    </svg>
-                    <div style={{ width:'18px', height:'6px', borderRadius:'50%', background:'rgba(91,142,255,0.35)', margin:'3px auto 0', filter:'blur(3px)' }} />
-                  </div>
-                </div>
-              </div>
+              <p className="desc">
+                Planification, cartographie et kilométrage optimisés<br/>
+                pour les professionnels de santé.
+              </p>
 
               <div className="cards">
                 {[
-                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/><circle cx="19" cy="18" r="3"/></svg>, title: 'Itinéraires optimisés', desc: 'Réduisez vos déplacements et gagnez du temps.' },
-                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>, title: 'Statistiques détaillées', desc: 'Kilomètres, temps et frais suivis en temps réel.' },
-                  { icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>, title: 'Application PWA', desc: 'Disponible sur tablette, mobile et desktop.' },
-                ].map(f => (
-                  <div className="card" key={f.title}>
-                    <div className="card-icon">{f.icon}</div>
-                    <div className="card-title">{f.title}</div>
-                    <div className="card-desc">{f.desc}</div>
+                  {icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B6EFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/><path d="M8 11h6M11 8v6"/></svg>,title:'Itinéraires optimisés',desc:'Réduisez vos déplacements et gagnez du temps.'},
+                  {icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B6EFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V13M12 17V9M16 17V13"/></svg>,title:'Statistiques détaillées',desc:'Kilomètres, temps et frais suivis en temps réel.'},
+                  {icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B6EFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>,title:'Application PWA',desc:'Disponible sur tablette, mobile et desktop.'},
+                ].map(f=>(
+                  <div key={f.title} className="card">
+                    <div className="ci">{f.icon}</div>
+                    <div className="ct">{f.title}</div>
+                    <div className="cd">{f.desc}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right — Form */}
-            <div className="col-right">
-              {/* ════ COUCHE 6 — FORMULAIRE ════ */}
-              <div className="form-card">
-                <div className="form-h1">
-                  {mode === 'login' ? 'Connexion' : mode === 'register' ? 'Créer un compte' : 'Réinitialiser'}
+            {/* ─ Colonne droite — Formulaire ─ */}
+            <div className="cr">
+              <div className="fc">
+                <div className="fh">
+                  {mode==='login'?'Connexion':mode==='register'?'Créer un compte':'Réinitialiser'}
                 </div>
-                <div className="form-sub">
-                  {mode === 'login' ? 'Accédez à votre espace professionnel'
-                    : mode === 'register' ? 'Commencez à organiser vos tournées'
-                    : 'Recevez un lien de réinitialisation par email'}
+                <div className="fs">
+                  {mode==='login'?'Accédez à votre espace professionnel':mode==='register'?'Commencez à organiser vos tournées':'Recevez un lien par email'}
                 </div>
 
                 <form onSubmit={submit}>
-                  {mode === 'register' && (
+                  {mode==='register'&&(
                     <div className="field">
-                      <label className="field-label">Prénom / Pseudonyme</label>
-                      <div className="field-wrap">
-                        <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                        <input className="field-input" placeholder="Ex : Sophie, Dr Martin…" value={pseudonyme} onChange={e => setPseudo(e.target.value)} required />
+                      <label className="fl">Prénom / Pseudonyme</label>
+                      <div className="fw">
+                        <span className="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                        <input className="fi" placeholder="Ex : Sophie, Dr Martin…" value={pseudonyme} onChange={e=>setPseudo(e.target.value)} required/>
                       </div>
                     </div>
                   )}
 
                   <div className="field">
-                    <label className="field-label">Adresse email</label>
-                    <div className="field-wrap">
-                      <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
-                      <input type="email" className="field-input" placeholder="exemple@domaine.fr" value={email} onChange={e => setEmail(e.target.value)} required />
+                    <label className="fl">Adresse email</label>
+                    <div className="fw">
+                      <span className="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                      <input type="email" className="fi" placeholder="exemple@domaine.fr" value={email} onChange={e=>setEmail(e.target.value)} required/>
                     </div>
                   </div>
 
-                  {mode !== 'reset' && (
+                  {mode!=='reset'&&(
                     <div className="field">
-                      <label className="field-label">Mot de passe</label>
-                      <div className="field-wrap">
-                        <span className="field-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-                        <input type={showPwd ? 'text' : 'password'} className="field-input" placeholder="••••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
-                        <button type="button" className="field-eye" onClick={() => setShowPwd(!showPwd)}>
+                      <label className="fl">Mot de passe</label>
+                      <div className="fw">
+                        <span className="fic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                        <input type={showPwd?'text':'password'} className="fi" placeholder="••••••••••" value={password} onChange={e=>setPassword(e.target.value)} required minLength={6}/>
+                        <button type="button" className="eye" onClick={()=>setShowPwd(!showPwd)}>
                           {showPwd
-                            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                            ?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            :<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
                         </button>
                       </div>
                     </div>
                   )}
 
-                  <button type="submit" className="btn-primary" disabled={loading}>
-                    {loading ? 'Chargement…'
-                      : mode === 'login' ? <><span>Se connecter</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
-                      : mode === 'register' ? <><span>Créer mon compte</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
-                      : 'Envoyer le lien'}
+                  <button type="submit" className="btn" disabled={loading}>
+                    {loading?'Chargement…':mode==='login'?<><span>Se connecter</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>:mode==='register'?<><span>Créer mon compte</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>:'Envoyer le lien'}
                   </button>
                 </form>
 
-                <div className="form-links">
-                  {mode === 'login' && (<>
-                    <button className="lnk" onClick={() => setMode('reset')}>Mot de passe oublié ?</button>
-                    <p className="lnk-muted">Pas encore de compte ? <button className="lnk" onClick={() => setMode('register')}>S'inscrire</button></p>
+                <div className="links">
+                  {mode==='login'&&(<>
+                    <button className="lk" onClick={()=>setMode('reset')}>Mot de passe oublié ?</button>
+                    <p className="lkm">Pas encore de compte ? <button className="lk" onClick={()=>setMode('register')}>S'inscrire</button></p>
                   </>)}
-                  {mode !== 'login' && (
-                    <button className="lnk" style={{ color:'#64748B' }} onClick={() => setMode('login')}>← Retour à la connexion</button>
-                  )}
+                  {mode!=='login'&&(<button className="lk" style={{color:'#64748B'}} onClick={()=>setMode('login')}>← Retour à la connexion</button>)}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <footer className="footer">
+          <footer className="ft">
             <span>© 2026 Itilib. Tous droits réservés.</span>
-            <div className="footer-links">
+            <div className="ftl">
               <a href="/mentions-legales">Mentions légales</a>
               <a href="/mentions-legales">Confidentialité</a>
             </div>
@@ -569,6 +474,6 @@ function AuthInner() {
   );
 }
 
-export default function AuthPage() {
-  return <Suspense fallback={null}><AuthInner /></Suspense>;
+export default function AuthPage(){
+  return <Suspense fallback={null}><AuthInner/></Suspense>;
 }
