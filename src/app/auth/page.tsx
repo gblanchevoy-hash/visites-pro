@@ -303,16 +303,75 @@ function AuthInner() {
         .route-path{stroke-dasharray:1200;stroke-dashoffset:1200;animation:drawRoute 2.2s .3s ease forwards;}
         @keyframes drawRoute{to{stroke-dashoffset:0;}}
 
+        /* ── Tablette large (1024–1199px) ── */
         @media(max-width:1199px){
-          .hl{font-size:48px;line-height:54px;}
-          .main{padding:0 40px;}
+          .hl{font-size:44px;line-height:50px;letter-spacing:-2px;}
+          .desc{font-size:16px;margin-bottom:36px;}
+          .main{padding:0 36px 0 40px;}
+          .col-left{padding-right:0;}
+          .badge{margin-bottom:24px;}
+          .cards{gap:12px;}
+          .card{padding:20px 16px;}
+          .ct{font-size:13px;}
+          .cd{font-size:12px;}
+          .fc{width:400px;padding:36px 32px;}
+          .fh{font-size:30px;}
+          .fi{height:54px;}
+          .btn{height:54px;font-size:15px;}
         }
+
+        /* ── Tablette portrait + mobile (≤1023px) ── */
         @media(max-width:1023px){
           html,body{overflow:auto;}
-          .p{height:auto;min-height:100vh;}
-          .main{grid-template-columns:1fr;padding:80px 28px 32px;gap:48px;}
-          .fc{width:100%;max-width:440px;}
+          .p{height:auto;min-height:100vh;overflow:auto;}
+
+          /* Layout : 1 colonne centrée */
+          .main{
+            grid-template-columns:1fr;
+            padding:24px 24px 40px;
+            gap:32px;
+            align-items:start;
+          }
+
+          /* Halos et tracé masqués */
           .route-svg,.route-glow,.h1,.h2,.h3,.h4{display:none;}
+
+          /* Logo plus compact */
+          .logo-bar{padding:20px 24px 0;}
+
+          /* Titre adapté */
+          .hl{font-size:36px;line-height:42px;letter-spacing:-1.5px;margin-bottom:16px;}
+          .desc{font-size:15px;margin-bottom:28px;max-width:100%;}
+          .badge{height:32px;font-size:11px;margin-bottom:20px;}
+
+          /* Cards en grille 3 colonnes compactes */
+          .cards{gap:10px;}
+          .card{padding:16px 14px;border-radius:20px;}
+          .ci{width:40px;height:40px;border-radius:10px;margin-bottom:12px;}
+          .ct{font-size:12px;}
+          .cd{font-size:11px;line-height:1.4;}
+
+          /* Formulaire pleine largeur centré */
+          .col-right{justify-content:center;}
+          .fc{width:100%;max-width:480px;border-radius:28px;padding:32px 28px;}
+          .fh{font-size:28px;margin-bottom:4px;}
+          .fs{font-size:14px;margin-bottom:24px;}
+          .fi{height:54px;font-size:16px;border-radius:14px;} /* 16px évite zoom iOS */
+          .btn{height:54px;border-radius:14px;font-size:15px;}
+          .field{margin-bottom:12px;}
+        }
+
+        /* ── Mobile (≤480px) ── */
+        @media(max-width:480px){
+          .main{padding:16px 16px 32px;}
+          .hl{font-size:30px;line-height:36px;}
+          .cards{flex-wrap:wrap;}
+          .card{flex:1 1 calc(50% - 5px);min-width:130px;}
+          .card:last-child{flex:1 1 100%;}
+          .fc{padding:24px 20px;}
+          .logo-bar{padding:16px 16px 0;}
+          .ft{padding:0 16px 16px;flex-direction:column;gap:8px;text-align:center;}
+          .ftl{gap:16px;}
         }
       `}</style>
 

@@ -207,6 +207,8 @@ export default function PlanningPage() {
 
   // ── Context menu state ──
   const [ctxMenu, setCtxMenu] = useState<{ rdv: RendezVous; x: number; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const LONG_PRESS_DURATION = 500; // ms pour déclencher le menu sur touch
 
   useEffect(() => {
     if (!ctxMenu) return;
@@ -277,7 +279,44 @@ export default function PlanningPage() {
 
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
     if (e.button === 2) return;
-    if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
+    if (e.pointerType === 'touch') {
+      // Appui long → menu contextuel / appui court → ouvre la modale
+      const touchX = e.clientX, touchY = e.clientY;
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        // Vibration haptique si disponible
+        if (navigator.vibrate) navigator.vibrate(30);
+        setCtxMenu({ rdv, x: touchX, y: touchY });
+      }, LONG_PRESS_DURATION);
+
+      const cancelLongPress = () => {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+      };
+
+      const onTouchEnd = () => {
+        document.removeEventListener('pointerup', onTouchEnd);
+        document.removeEventListener('pointermove', onTouchMove);
+        // Si le timer est toujours actif = appui court → ouvrir modal
+        if (longPressTimer.current) {
+          cancelLongPress();
+          setEditRdv(rdv);
+          setShowModal(true);
+        }
+      };
+
+      const onTouchMove = (mv: PointerEvent) => {
+        // Si l'utilisateur glisse, annuler le long-press
+        const dx = mv.clientX - touchX, dy = mv.clientY - touchY;
+        if (Math.sqrt(dx*dx + dy*dy) > 8) cancelLongPress();
+      };
+
+      document.addEventListener('pointerup', onTouchEnd, { once: true });
+      document.addEventListener('pointermove', onTouchMove);
+      return;
+    }
     e.stopPropagation();
 
     const now = Date.now();
@@ -489,7 +528,10 @@ export default function PlanningPage() {
             boxShadow: isDrag ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
             padding: '7px 10px',
             overflow: 'hidden',
-            touchAction: 'manipulation',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
           }}>
           {/* Time row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
