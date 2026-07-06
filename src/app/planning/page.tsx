@@ -270,11 +270,26 @@ export default function PlanningPage() {
 
   const DRAG_PX = 5;
 
+  // Track last click time to detect double-click in pointerdown
+  const lastClickRef = useRef<{ id: string; time: number } | null>(null);
+
+  const DOUBLE_CLICK_MS = 280;
+
   const startDrag = useCallback((e: React.PointerEvent, rdv: RendezVous, container: HTMLElement, days?: Date[]) => {
     if (e.button === 2) return;
     if (e.pointerType === 'touch') { setEditRdv(rdv); setShowModal(true); return; }
-    e.preventDefault();
     e.stopPropagation();
+
+    const now = Date.now();
+
+    // Detect double-click: two rapid clicks on the same rdv → open modal, no drag
+    if (lastClickRef.current && lastClickRef.current.id === rdv.id && now - lastClickRef.current.time < DOUBLE_CLICK_MS) {
+      lastClickRef.current = null;
+      setEditRdv(rdv);
+      setShowModal(true);
+      return;
+    }
+    lastClickRef.current = { id: rdv.id, time: now };
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -282,13 +297,12 @@ export default function PlanningPage() {
 
     dragState.current = { rdv, rect, days, startX, startY, moved: false };
 
-    const onMove = (mv: MouseEvent) => {
+    function onMove(mv: MouseEvent) {
       if (!dragState.current) return;
       const dx   = mv.clientX - startX;
       const dy   = mv.clientY - startY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Activer le drag dès que le seuil est atteint
       if (!dragState.current.moved && dist > DRAG_PX) {
         dragState.current.moved = true;
         createGhost(rdv, mv.clientX, mv.clientY);
@@ -309,9 +323,9 @@ export default function PlanningPage() {
           hEl.textContent = `${fmtH(newStart)} – ${fmtH(newEnd)}`;
         }
       }
-    };
+    }
 
-    const onUp = async (up: MouseEvent) => {
+    async function onUp(up: MouseEvent) {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup',   onUp);
       document.body.style.cursor = '';
@@ -323,9 +337,8 @@ export default function PlanningPage() {
       setDraggingId(null);
       dragState.current = null;
 
-      if (!moved) return; // simple clic → rien
+      if (!moved) return;
 
-      // Calculer la nouvelle position
       const relY    = up.clientY - rect.top;
       const mins    = snapTo15(Math.max(DAY_START * 60, DAY_START * 60 + Math.round(relY / HOUR_HEIGHT * 60)));
       const newH    = minutesToTime(Math.min(mins, 22 * 60));
@@ -356,7 +369,7 @@ export default function PlanningPage() {
         updateRendezVous(updated);
         toast.success(`Déplacé → ${fmtH(newH)}`);
       }
-    };
+    }
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
@@ -460,7 +473,6 @@ export default function PlanningPage() {
       <>
         <div
           onPointerDown={e => { if (e.button !== 2) onPointerDown(e); }}
-          onDoubleClick={e => { e.stopPropagation(); setEditRdv(rdv); setShowModal(true); }}
           onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ rdv, x: e.clientX, y: e.clientY }); }}
           onMouseEnter={hasInfo ? handleMouseEnter : undefined}
           onMouseLeave={hasInfo ? handleMouseLeave : undefined}
