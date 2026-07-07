@@ -71,7 +71,7 @@ interface AppState {
   redo: () => Promise<void>;
 
   // Shared travel segment cache (shared between Planning and Tournées)
-  segmentCache: Record<string, { km: number; min: number } | null>;
+  segmentCache: Record<string, { km: number; min: number; has_motorway?: boolean } | null>;
   setSegmentCache: (key: string, value: { km: number; min: number } | null) => void;
 
   // Loaders

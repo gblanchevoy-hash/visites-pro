@@ -44,7 +44,7 @@ export async function calculerItineraire(
   points: Array<{ lat: number; lng: number }>,
   userOrsKey?: string,
   userId?: string
-): Promise<{ distance_km: number; duree_min: number; geometry: GeoJSON.LineString } | null> {
+): Promise<{ distance_km: number; duree_min: number; geometry: GeoJSON.LineString; has_motorway?: boolean } | null> {
   if (points.length < 2) return null;
   try {
     const resp = await fetch('/api/route', {
@@ -54,7 +54,7 @@ export async function calculerItineraire(
     });
     if (!resp.ok) return null;
     const data = await resp.json();
-    return { distance_km: data.distance_km, duree_min: data.duree_min, geometry: data.geometry };
+    return { distance_km: data.distance_km, duree_min: data.duree_min, geometry: data.geometry, has_motorway: data.has_motorway ?? false };
   } catch (e) {
     console.error('Routing error:', e);
     return null;
@@ -66,7 +66,7 @@ export async function calculerSegment(
   to: { lat: number; lng: number },
   userOrsKey?: string,
   userId?: string
-): Promise<{ distance_km: number; duree_min: number } | null> {
+): Promise<{ distance_km: number; duree_min: number; has_motorway?: boolean } | null> {
   try {
     const resp = await fetch('/api/segment', {
       method: 'POST',
@@ -75,7 +75,7 @@ export async function calculerSegment(
     });
     if (!resp.ok) return null;
     const data = await resp.json();
-    return { distance_km: data.distance_km, duree_min: data.duree_min };
+    return { distance_km: data.distance_km, duree_min: data.duree_min, has_motorway: data.has_motorway ?? false };
   } catch { return null; }
 }
 

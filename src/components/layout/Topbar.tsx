@@ -1,6 +1,7 @@
 'use client';
 import { useAppStore, describeAction } from '@/lib/stores/appStore';
 import { Menu, Undo2, Redo2 } from 'lucide-react';
+import StickyNoteButton from '@/components/ui/StickyNote';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -68,6 +69,7 @@ export default function Topbar({ title, subtitle, actions }: Props) {
             <span className="hidden sm:inline" style={{ fontSize: '12px' }}>Rétablir</span>
           </button>
         )}
+        <StickyNoteButton />
         {actions}
       </div>
     </header>

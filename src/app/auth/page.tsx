@@ -51,7 +51,9 @@ function AuthInner() {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://www.itilib.fr/reset-password',
+    });
     if (error) toast.error(error.message);
     else toast.success('Email envoyé !');
     setLoading(false);

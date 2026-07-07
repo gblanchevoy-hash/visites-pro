@@ -24,7 +24,7 @@ const TourneeMap = dynamic(() => import('@/components/map/TourneeMap'), {
 
 const MiniMapPicker = dynamic(() => import('@/components/ui/MiniMapPicker'), { ssr: false });
 
-interface Segment { km: number; min: number; }
+interface Segment { km: number; min: number; has_motorway?: boolean; }
 const PIN_COLORS = ['#2563eb','#16a34a','#dc2626','#9333ea','#ea580c','#0891b2','#be185d','#ca8a04'];
 
 function getRdvLabel(rdv: RendezVous) {
@@ -106,7 +106,7 @@ export default function TourneesPage() {
       }
       await new Promise(r => setTimeout(r, 250));
       const res = await calculerSegment(sequence[i], sequence[i+1], settings?.ors_api_key ?? undefined, user?.id);
-      const segValue = res ? { km: res.distance_km, min: res.duree_min } : null;
+      const segValue = res ? { km: res.distance_km, min: res.duree_min, has_motorway: res.has_motorway ?? false } : null;
       segs.push(segValue);
       // Save to shared cache so Planning sees the same values
       setSegmentCache(cacheKey, segValue);
@@ -367,7 +367,17 @@ function SegRow({ seg, color, segIdx, active, onToggle }: { seg: Segment | null;
         <Car className="w-4 h-4" style={{ color }} />
       </div>
       <div className="flex items-center gap-3 text-sm flex-1" style={{ color: active ? color : '#94a3b8' }}>
-        {seg ? (<><span className="font-semibold">{seg.km.toFixed(1)} km</span><span className="text-slate-300">|</span><Clock className="w-3.5 h-3.5 opacity-60" /><span className="font-semibold">{formatDuree(seg.min)}</span></>)
+        {seg ? (<>
+          <span className="font-semibold">{seg.km.toFixed(1)} km</span>
+          <span className="text-slate-300">|</span>
+          <Clock className="w-3.5 h-3.5 opacity-60" />
+          <span className="font-semibold">{formatDuree(seg.min)}</span>
+          {seg.has_motorway && (
+            <span style={{ fontSize:'10px', fontWeight:600, padding:'2px 6px', borderRadius:'6px', background:'#FEF3C7', color:'#92400E', border:'1px solid #FDE68A', whiteSpace:'nowrap' }}>
+              🛣️ A
+            </span>
+          )}
+        </>)
           : <span className="text-slate-400 text-xs italic">Calculez pour voir le trajet</span>}
       </div>
       <button onClick={() => onToggle(segIdx)} title={active ? 'Masquer ce tracé' : 'Afficher ce tracé'}

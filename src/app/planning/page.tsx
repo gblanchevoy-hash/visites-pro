@@ -12,7 +12,7 @@ import {
   toISODate, isSameDay, addDays,
 } from '@/lib/utils/dates';
 import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo';
-import { ChevronLeft, ChevronRight, Plus, Car, Clock, MapPin, Calendar, ChevronDown, ChevronUp, ArrowLeft, FileText, Users, ArrowRight as ArrowRightIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Car, Clock, Calendar, Users, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';
 import toast from 'react-hot-toast';
@@ -252,18 +252,7 @@ export default function PlanningPage() {
   };
 
   // ── Drag & drop ──
-  // Règles :
-  // • Clic droit          → menu contextuel UNIQUEMENT
-  // • Double-clic gauche  → ouvre la modale
-  // • Simple clic gauche  → rien
-  // • Maintien 350ms puis glisser → déplace le RDV
-
-  // ── Drag & drop ──
-  // Logique simple et fiable :
-  // 1. mousedown → on enregistre la position de départ
-  // 2. Si on glisse de plus de DRAG_PX pixels → on active le drag immédiatement
-  // 3. mouseup → on dépose et on sauvegarde
-  // Le double-clic et le clic-droit sont gérés séparément sur le composant RdvCard.
+  // Double-clic → modal | Clic droit → menu contextuel | Maintien+glisser → déplace
 
   const dragState = useRef<{
     rdv: RendezVous; rect: DOMRect; days?: Date[];
