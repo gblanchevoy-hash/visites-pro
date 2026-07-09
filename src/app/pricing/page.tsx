@@ -69,7 +69,7 @@ export default function PricingPage() {
       {/* Header */}
       <div style={{ textAlign:'center', padding:'64px 24px 48px' }}>
         <div style={{ display:'inline-flex', alignItems:'center', padding:'6px 16px', background:'#EFF6FF', borderRadius:'999px', border:'1px solid #BFDBFE', fontSize:'13px', fontWeight:600, color:'#2563EB', marginBottom:'24px' }}>
-          🎉 30 jours d'essai gratuit — sans carte bancaire
+          🎉 30 jours d'essai gratuit inclus — sans carte bancaire
         </div>
         <h1 style={{ fontSize:'48px', fontWeight:900, color:'#0F172A', letterSpacing:'-1.5px', marginBottom:'16px' }}>
           Tarifs simples et transparents
@@ -80,31 +80,7 @@ export default function PricingPage() {
       </div>
 
       {/* Plans */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:'24px', maxWidth:'900px', margin:'0 auto 80px', padding:'0 24px' }}>
-
-        {/* Plan Essai */}
-        <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:'24px', padding:'36px', boxShadow:'0 4px 16px rgba(15,23,42,.05)' }}>
-          <div style={{ marginBottom:'24px' }}>
-            <p style={{ fontSize:'13px', fontWeight:600, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'8px' }}>Essai gratuit</p>
-            <div style={{ display:'flex', alignItems:'baseline', gap:'4px', marginBottom:'8px' }}>
-              <span style={{ fontSize:'48px', fontWeight:900, color:'#0F172A' }}>0€</span>
-              <span style={{ fontSize:'16px', color:'#64748B' }}>/30 jours</span>
-            </div>
-            <p style={{ fontSize:'14px', color:'#94A3B8' }}>Toutes les fonctionnalités, sans restriction</p>
-          </div>
-          <Link href="/auth?tab=register" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#F8FAFC', border:'1.5px solid #E2E8F0', borderRadius:'14px', fontSize:'15px', fontWeight:600, color:'#0F172A', textDecoration:'none', marginBottom:'28px', transition:'all .15s' }}>
-            Commencer gratuitement <ArrowRight style={{ width:'16px', height:'16px' }} />
-          </Link>
-          <div style={{ borderTop:'1px solid #F1F5F9', paddingTop:'24px' }}>
-            <p style={{ fontSize:'12px', fontWeight:600, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'14px' }}>Inclus pendant 30 jours</p>
-            {FEATURES_SOLO.map(f => (
-              <div key={f} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
-                <Check style={{ width:'16px', height:'16px', color:'#10B981', flexShrink:0 }} />
-                <span style={{ fontSize:'14px', color:'#475569' }}>{f}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(340px,1fr))', gap:'24px', maxWidth:'900px', margin:'0 auto 80px', padding:'0 24px' }}>
 
         {/* Plan Solo */}
         <div style={{ background:'linear-gradient(135deg,#1E40AF,#2563EB)', border:'none', borderRadius:'24px', padding:'36px', boxShadow:'0 20px 60px rgba(37,99,235,.30)', position:'relative', overflow:'hidden' }}>
@@ -120,11 +96,11 @@ export default function PricingPage() {
               <span style={{ fontSize:'48px', fontWeight:900, color:'#fff' }}>7,90€</span>
               <span style={{ fontSize:'16px', color:'rgba(255,255,255,.7)' }}>/mois</span>
             </div>
-            <p style={{ fontSize:'14px', color:'rgba(255,255,255,.65)' }}>Après les 30 jours d'essai gratuit</p>
+            <p style={{ fontSize:'14px', color:'rgba(255,255,255,.65)' }}>30 jours gratuits · puis 9,90€ TTC/mois</p>
           </div>
           <button onClick={() => handleCheckout('solo')} disabled={loading === 'solo'}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#fff', borderRadius:'14px', fontSize:'15px', fontWeight:700, color:'#2563EB', border:'none', cursor:'pointer', marginBottom:'28px' }}>
-            {loading === 'solo' ? <Loader2 style={{ width:'16px', height:'16px', animation:'spin .8s linear infinite' }} /> : <><span>Démarrer l'essai gratuit</span><ArrowRight style={{ width:'16px', height:'16px' }} /></>}
+            {loading === 'solo' ? <Loader2 style={{ width:'16px', height:'16px', animation:'spin .8s linear infinite' }} /> : <><span>Essai 30 jours gratuit</span><ArrowRight style={{ width:'16px', height:'16px' }} /></>}
           </button>
           <div style={{ borderTop:'1px solid rgba(255,255,255,.15)', paddingTop:'24px' }}>
             <p style={{ fontSize:'12px', fontWeight:600, color:'rgba(255,255,255,.6)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'14px' }}>Tout inclus</p>
@@ -148,11 +124,11 @@ export default function PricingPage() {
               <span style={{ fontSize:'48px', fontWeight:900, color:'#0F172A' }}>19,90€</span>
               <span style={{ fontSize:'16px', color:'#64748B' }}>/mois</span>
             </div>
-            <p style={{ fontSize:'14px', color:'#94A3B8' }}>Jusqu'à 5 professionnels</p>
+            <p style={{ fontSize:'14px', color:'#94A3B8' }}>30 jours gratuits · puis 19,90€ TTC/mois</p>
           </div>
           <button onClick={() => handleCheckout('cabinet')} disabled={loading === 'cabinet'}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#7C3AED', borderRadius:'14px', fontSize:'15px', fontWeight:600, color:'#fff', border:'none', cursor:'pointer', marginBottom:'28px' }}>
-            {loading === 'cabinet' ? <Loader2 style={{ width:'16px', height:'16px', animation:'spin .8s linear infinite' }} /> : <><span>Démarrer l'essai gratuit</span><ArrowRight style={{ width:'16px', height:'16px' }} /></>}
+            {loading === 'cabinet' ? <Loader2 style={{ width:'16px', height:'16px', animation:'spin .8s linear infinite' }} /> : <><span>Essai 30 jours gratuit</span><ArrowRight style={{ width:'16px', height:'16px' }} /></>}
           </button>
           <div style={{ borderTop:'1px solid #F1F5F9', paddingTop:'24px' }}>
             <p style={{ fontSize:'12px', fontWeight:600, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'14px' }}>Tout Solo +</p>
