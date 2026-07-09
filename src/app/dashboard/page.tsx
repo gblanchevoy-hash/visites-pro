@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const { user, patients, settings } = useAppStore();
   const [todayRdvs, setTodayRdvs] = useState<RendezVous[]>([]);
   const [weather, setWeather] = useState<{ temp: number; desc: string; icon: string } | null>(null);
-  const [forecast, setForecast] = useState<Array<{ day: string; icon: string; min: number; max: number; desc: string }>>([]);
+  const [forecast, setForecast] = useState<Array<{ day: string; iconAM: string; iconPM: string; tempAM: number; tempPM: number; min: number; max: number; descAM: string; descPM: string }>>([]);
   const [showForecast, setShowForecast] = useState(false);
   const [loading, setLoading] = useState(true);
   const today = new Date();
@@ -65,7 +65,7 @@ export default function DashboardPage() {
     const icons: Record<string,string> = {'0':'☀️','1':'🌤️','2':'⛅','3':'☁️','45':'🌫️','48':'🌫️','51':'🌦️','53':'🌦️','61':'🌧️','63':'🌧️','71':'🌨️','80':'🌦️','81':'🌧️','95':'⛈️'};
     const descs: Record<string,string> = {'0':'Ensoleillé','1':'Peu nuageux','2':'Partiellement nuageux','3':'Couvert','45':'Brouillard','51':'Bruine légère','61':'Pluie','71':'Neige','80':'Averses','95':'Orage'};
     const JOURS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=7`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=Europe%2FParis&forecast_days=7`)
       .then(r => r.json()).then(data => {
         const code = String(data.current.weathercode);
         setWeather({ temp: Math.round(data.current.temperature_2m), desc: descs[code]??'', icon: icons[code]??'🌡️' });
@@ -73,7 +73,20 @@ export default function DashboardPage() {
           setForecast(data.daily.time.map((d: string, i: number) => {
             const c = String(data.daily.weathercode[i]);
             const dayName = i === 0 ? 'Auj.' : i === 1 ? 'Dem.' : JOURS[new Date(d).getDay()];
-            return { day: dayName, icon: icons[c]??'🌡️', min: Math.round(data.daily.temperature_2m_min[i]), max: Math.round(data.daily.temperature_2m_max[i]), desc: descs[c]??'' };
+            // Hourly: 24 slots per day, index i*24 = midnight, +8 = 8h, +14 = 14h
+            const baseIdx = i * 24;
+            const cAM = data.hourly?.weathercode ? String(data.hourly.weathercode[baseIdx + 8]) : c;
+            const cPM = data.hourly?.weathercode ? String(data.hourly.weathercode[baseIdx + 14]) : c;
+            const tAM = data.hourly?.temperature_2m ? Math.round(data.hourly.temperature_2m[baseIdx + 8]) : Math.round(data.daily.temperature_2m_min[i]);
+            const tPM = data.hourly?.temperature_2m ? Math.round(data.hourly.temperature_2m[baseIdx + 14]) : Math.round(data.daily.temperature_2m_max[i]);
+            return {
+              day: dayName,
+              iconAM: icons[cAM]??'🌡️', iconPM: icons[cPM]??'🌡️',
+              descAM: descs[cAM]??'', descPM: descs[cPM]??'',
+              tempAM: tAM, tempPM: tPM,
+              min: Math.round(data.daily.temperature_2m_min[i]),
+              max: Math.round(data.daily.temperature_2m_max[i]),
+            };
           }));
         }
       }).catch(() => {});
@@ -147,11 +160,26 @@ export default function DashboardPage() {
           {showForecast && forecast.length > 0 && (
             <div style={{ marginTop:'12px', display:'flex', gap:'8px', flexWrap:'wrap' }}>
               {forecast.map((f, i) => (
-                <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'10px 14px', background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:'12px', minWidth:'72px', boxShadow:'0 2px 8px rgba(15,23,42,0.06)', transition:'transform 0.15s' }}>
-                  <span style={{ fontSize:'11px', fontWeight:600, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.04em' }}>{f.day}</span>
-                  <span style={{ fontSize:'22px', lineHeight:1 }}>{f.icon}</span>
-                  <span style={{ fontSize:'11px', color:'#94A3B8' }}>{f.desc}</span>
-                  <div style={{ display:'flex', gap:'4px', fontSize:'12px', fontWeight:600 }}>
+                <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'10px 12px', background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:'14px', minWidth:'90px', boxShadow:'0 2px 8px rgba(15,23,42,0.06)' }}>
+                  <span style={{ fontSize:'11px', fontWeight:700, color:'#0F172A', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'2px' }}>{f.day}</span>
+                  {/* Matin */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px', width:'100%', padding:'4px 6px', background:'#FFF7ED', borderRadius:'8px' }}>
+                    <span style={{ fontSize:'16px' }}>{f.iconAM}</span>
+                    <div>
+                      <div style={{ fontSize:'9px', color:'#94A3B8', fontWeight:600 }}>MATIN</div>
+                      <div style={{ fontSize:'13px', fontWeight:700, color:'#0F172A' }}>{f.tempAM}°</div>
+                    </div>
+                  </div>
+                  {/* Après-midi */}
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px', width:'100%', padding:'4px 6px', background:'#EFF6FF', borderRadius:'8px', marginTop:'3px' }}>
+                    <span style={{ fontSize:'16px' }}>{f.iconPM}</span>
+                    <div>
+                      <div style={{ fontSize:'9px', color:'#94A3B8', fontWeight:600 }}>APM</div>
+                      <div style={{ fontSize:'13px', fontWeight:700, color:'#0F172A' }}>{f.tempPM}°</div>
+                    </div>
+                  </div>
+                  {/* Min/Max */}
+                  <div style={{ display:'flex', gap:'4px', fontSize:'11px', fontWeight:600, marginTop:'2px' }}>
                     <span style={{ color:'#2563EB' }}>{f.max}°</span>
                     <span style={{ color:'#94A3B8' }}>{f.min}°</span>
                   </div>

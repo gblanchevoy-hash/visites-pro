@@ -538,7 +538,13 @@ function AuthInner() {
           </div>
 
           {/* Footer */}
-          <footer className="ft">
+          {/* Pricing link */}
+        <div style={{ position:'absolute', top:'20px', right:'56px', zIndex:20 }}>
+          <a href="/pricing" style={{ fontSize:'13px', fontWeight:500, color:'#2563EB', textDecoration:'none', padding:'8px 16px', background:'#EFF6FF', borderRadius:'999px', border:'1px solid #BFDBFE' }}>
+            Voir les tarifs →
+          </a>
+        </div>
+        <footer className="ft">
             <span>© 2026 Itilib. Tous droits réservés.</span>
             <div className="ftl">
               <a href="/legal?tab=mentions">Mentions légales</a>

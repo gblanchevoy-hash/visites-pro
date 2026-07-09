@@ -373,8 +373,21 @@ function SegRow({ seg, color, segIdx, active, onToggle }: { seg: Segment | null;
           <Clock className="w-3.5 h-3.5 opacity-60" />
           <span className="font-semibold">{formatDuree(seg.min)}</span>
           {seg.has_motorway && (
-            <span style={{ fontSize:'10px', fontWeight:600, padding:'2px 6px', borderRadius:'6px', background:'#FEF3C7', color:'#92400E', border:'1px solid #FDE68A', whiteSpace:'nowrap' }}>
-              🛣️ A
+            <span title="Tronçon d'autoroute" style={{ display:'inline-flex', alignItems:'center', flexShrink:0 }}>
+              <svg width="22" height="26" viewBox="0 0 50 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Blue background */}
+                <rect width="50" height="60" rx="4" fill="#003399"/>
+                {/* Red A badge top */}
+                <rect x="14" y="3" width="22" height="13" rx="2" fill="#CC0000"/>
+                <text x="25" y="13" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">A</text>
+                {/* Road symbol */}
+                <rect x="20" y="18" width="4" height="16" rx="1" fill="white"/>
+                <rect x="26" y="18" width="4" height="16" rx="1" fill="white"/>
+                <rect x="10" y="31" width="30" height="4" rx="1" fill="white"/>
+                <rect x="10" y="37" width="8" height="14" rx="1" fill="white"/>
+                <rect x="20" y="37" width="10" height="14" rx="1" fill="white"/>
+                <rect x="32" y="37" width="8" height="14" rx="1" fill="white"/>
+              </svg>
             </span>
           )}
         </>)

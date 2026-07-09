@@ -49,11 +49,22 @@ export default function StickyNoteButton() {
   }, [open]);
 
   const addNote = async () => {
-    if (!user) return;
+    // Fallback local si table pas encore créée
+    if (!user) {
+      const localNote: Note = { id: `local-${Date.now()}`, contenu: '', couleur: 'yellow' };
+      setNotes(prev => [localNote, ...prev]);
+      return;
+    }
     const { data, error } = await supabase.from('notes_rapides')
       .insert({ user_id: user.id, contenu: '', couleur: 'yellow' })
       .select().single();
-    if (!error && data) setNotes(prev => [data as Note, ...prev]);
+    if (error) {
+      // Table pas encore créée → mode local
+      const localNote: Note = { id: `local-${Date.now()}`, contenu: '', couleur: 'yellow' };
+      setNotes(prev => [localNote, ...prev]);
+    } else if (data) {
+      setNotes(prev => [data as Note, ...prev]);
+    }
   };
 
   const updateNote = useCallback((id: string, field: 'contenu' | 'couleur', value: string) => {
@@ -61,13 +72,18 @@ export default function StickyNoteButton() {
     setSaving(id);
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(async () => {
-      await supabase.from('notes_rapides').update({ [field]: value }).eq('id', id);
+      // Skip DB save for local notes
+      if (!id.startsWith('local-')) {
+        await supabase.from('notes_rapides').update({ [field]: value }).eq('id', id);
+      }
       setSaving(null);
     }, 800);
   }, []);
 
   const deleteNote = async (id: string) => {
-    await supabase.from('notes_rapides').delete().eq('id', id);
+    if (!id.startsWith('local-')) {
+      await supabase.from('notes_rapides').delete().eq('id', id);
+    }
     setNotes(prev => prev.filter(n => n.id !== id));
   };
 

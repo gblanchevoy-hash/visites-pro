@@ -78,9 +78,40 @@ async function searchNominatim(q: string): Promise<GeocodeResult[]> {
 // Future: Google Places — only activated when GOOGLE_PLACES_API_KEY env var is set server-side.
 async function searchGooglePlaces(): Promise<GeocodeResult[] | null> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) return null; // not configured — fall through to free sources
-  // Stub: when enabled, implement Places Autocomplete + Place Details here.
+  if (!key) return null;
   return null;
+}
+
+// Photon (Komoot) — basé sur OpenStreetMap, excellent pour la France, gratuit sans clé
+async function searchPhoton(q: string): Promise<GeocodeResult[]> {
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=fr&bbox=-5.1,41.3,9.6,51.1`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Itilib/1.0' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.features ?? []).map((f: {
+      properties: {
+        name?: string; street?: string; housenumber?: string;
+        postcode?: string; city?: string; country?: string; type?: string;
+      };
+      geometry: { coordinates: [number, number] };
+    }) => {
+      const p = f.properties;
+      const parts = [
+        p.housenumber && p.street ? `${p.housenumber} ${p.street}` : (p.street ?? p.name ?? ''),
+        p.postcode && p.city ? `${p.postcode} ${p.city}` : (p.city ?? ''),
+      ].filter(Boolean);
+      return {
+        label: parts.join(', ') || p.name || '',
+        lng: f.geometry.coordinates[0],
+        lat: f.geometry.coordinates[1],
+        postcode: p.postcode,
+        city: p.city,
+        street: p.street,
+        housenumber: p.housenumber,
+      };
+    }).filter((r: GeocodeResult) => r.label.length > 0);
+  } catch { return []; }
 }
 
 export async function GET(req: NextRequest) {
@@ -113,6 +144,19 @@ export async function GET(req: NextRequest) {
       setCached(cacheKey, google);
       logApiCall({ api: 'geocode', userId, success: true, durationMs: Date.now() - started });
       return NextResponse.json({ results: google, source: 'google' });
+    }
+
+    // Photon en priorité (meilleure couverture POI/bâtiments/résidences)
+    const photon = await searchPhoton(q);
+    if (photon.length > 0) {
+      // Compléter avec data.gouv pour les adresses précises françaises
+      const gouv = await searchGouv(q);
+      const combined = [...gouv, ...photon.filter(p =>
+        !gouv.some(g => Math.abs(g.lat - p.lat) < 0.001 && Math.abs(g.lng - p.lng) < 0.001)
+      )].slice(0, 6);
+      setCached(cacheKey, combined);
+      logApiCall({ api: 'geocode', userId, success: true, durationMs: Date.now() - started });
+      return NextResponse.json({ results: combined, source: 'photon+gouv' });
     }
 
     let results = await searchGouv(q);

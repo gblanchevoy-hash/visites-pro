@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const orsRes = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
       method: 'POST',
       headers: { Authorization: orsKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ coordinates: [[from.lng, from.lat], [to.lng, to.lat]] }),
+      body: JSON.stringify({ coordinates: [[from.lng, from.lat], [to.lng, to.lat]], instructions: true, instructions_format: 'text' }),
     });
 
     if (!orsRes.ok) {
@@ -56,14 +56,31 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await orsRes.json();
-    const summary = data.features?.[0]?.properties?.summary;
+    const feature = data.features?.[0];
+    const summary = feature?.properties?.summary;
     if (!summary) {
       return NextResponse.json({ error: 'Trajet introuvable' }, { status: 404 });
+    }
+
+    // Détecter les autoroutes dans les étapes
+    let hasMotorway = false;
+    const segments = feature.properties?.segments ?? [];
+    for (const seg of segments) {
+      for (const step of (seg.steps ?? [])) {
+        const name: string = step.name ?? '';
+        const type: number = step.type ?? -1;
+        if (type === 3 || /^A\d+/i.test(name) || name.toLowerCase().includes('autoroute') || name.toLowerCase().includes('motorway')) {
+          hasMotorway = true;
+          break;
+        }
+      }
+      if (hasMotorway) break;
     }
 
     const result = {
       distance_km: Math.round(summary.distance / 100) / 10,
       duree_min: Math.round(summary.duration / 60),
+      has_motorway: hasMotorway,
     };
 
     cache.set(key, { result, expires: Date.now() + CACHE_TTL_MS });
