@@ -66,12 +66,12 @@ function AuthInner() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;overflow:hidden;}
+        html,body{height:100%;}
 
         /* ─── ROOT ─── */
         .p{
           font-family:'Inter',-apple-system,sans-serif;
-          width:100vw;height:100vh;overflow:hidden;
+          width:100vw;min-height:100vh;overflow-x:hidden;overflow-y:auto;
           background:#FFFFFF;
           position:relative;
         }
@@ -324,43 +324,45 @@ function AuthInner() {
 
         /* ── Tablette portrait + mobile (≤1023px) ── */
         @media(max-width:1023px){
-          html,body{overflow:auto;}
-          .p{height:auto;min-height:100vh;overflow:auto;}
+          html,body{overflow-y:auto !important;height:auto;}
+          .p{height:auto;min-height:100vh;overflow-y:auto;}
 
-          /* Layout : 1 colonne centrée */
+          /* Layout : formulaire EN PREMIER sur mobile, puis texte */
           .main{
             grid-template-columns:1fr;
-            padding:24px 24px 40px;
-            gap:32px;
+            grid-template-rows:auto auto;
+            padding:16px 20px 40px;
+            gap:24px;
             align-items:start;
           }
+
+          /* Formulaire passe EN PREMIER sur mobile */
+          .cr{order:-1;}
+          .cl{order:1;}
 
           /* Halos et tracé masqués */
           .route-svg,.route-glow,.h1,.h2,.h3,.h4{display:none;}
 
           /* Logo plus compact */
-          .logo-bar{padding:20px 24px 0;}
+          .logo-bar{padding:16px 20px 0;}
 
           /* Titre adapté */
-          .hl{font-size:36px;line-height:42px;letter-spacing:-1.5px;margin-bottom:16px;}
-          .desc{font-size:15px;margin-bottom:28px;max-width:100%;}
-          .badge{height:32px;font-size:11px;margin-bottom:20px;}
+          .hl{font-size:30px;line-height:36px;letter-spacing:-1px;margin-bottom:12px;}
+          .desc{font-size:14px;margin-bottom:20px;max-width:100%;}
+          .badge{height:30px;font-size:11px;margin-bottom:16px;display:none;}
 
-          /* Cards en grille 3 colonnes compactes */
-          .cards{gap:10px;}
-          .card{padding:16px 14px;border-radius:20px;}
-          .ci{width:40px;height:40px;border-radius:10px;margin-bottom:12px;}
-          .ct{font-size:12px;}
-          .cd{font-size:11px;line-height:1.4;}
+          /* Cards masquées sur mobile pour gagner de la place */
+          .cards{display:none;}
 
-          /* Formulaire pleine largeur centré */
-          .col-right{justify-content:center;}
-          .fc{width:100%;max-width:480px;border-radius:28px;padding:32px 28px;}
-          .fh{font-size:28px;margin-bottom:4px;}
-          .fs{font-size:14px;margin-bottom:24px;}
-          .fi{height:54px;font-size:16px;border-radius:14px;} /* 16px évite zoom iOS */
-          .btn{height:54px;border-radius:14px;font-size:15px;}
-          .field{margin-bottom:12px;}
+          /* Formulaire pleine largeur */
+          .col-right{justify-content:stretch;}
+          .fc{width:100%;max-width:100%;border-radius:20px;padding:24px 20px;}
+          .fh{font-size:26px;margin-bottom:4px;}
+          .fs{font-size:13px;margin-bottom:20px;}
+          .fi{height:52px;font-size:16px;border-radius:12px;}
+          .btn{height:52px;border-radius:12px;font-size:15px;margin-top:4px;}
+          .field{margin-bottom:10px;}
+          .links{margin-top:16px;}
         }
 
         /* ── Mobile (≤480px) ── */

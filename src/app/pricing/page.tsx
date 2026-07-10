@@ -94,9 +94,9 @@ export default function PricingPage() {
             </div>
             <div style={{ display:'flex', alignItems:'baseline', gap:'4px', marginBottom:'8px' }}>
               <span style={{ fontSize:'48px', fontWeight:900, color:'#fff' }}>7,90€</span>
-              <span style={{ fontSize:'16px', color:'rgba(255,255,255,.7)' }}>/mois</span>
+              <span style={{ fontSize:'14px', color:'rgba(255,255,255,.7)' }}>HT/mois</span>
             </div>
-            <p style={{ fontSize:'14px', color:'rgba(255,255,255,.65)' }}>30 jours gratuits · puis 9,90€ TTC/mois</p>
+            <p style={{ fontSize:'14px', color:'rgba(255,255,255,.65)' }}>30 jours gratuits · puis 7,90€ HT/mois</p>
           </div>
           <button onClick={() => handleCheckout('solo')} disabled={loading === 'solo'}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#fff', borderRadius:'14px', fontSize:'15px', fontWeight:700, color:'#2563EB', border:'none', cursor:'pointer', marginBottom:'28px' }}>
@@ -122,9 +122,9 @@ export default function PricingPage() {
             </div>
             <div style={{ display:'flex', alignItems:'baseline', gap:'4px', marginBottom:'8px' }}>
               <span style={{ fontSize:'48px', fontWeight:900, color:'#0F172A' }}>19,90€</span>
-              <span style={{ fontSize:'16px', color:'#64748B' }}>/mois</span>
+              <span style={{ fontSize:'14px', color:'#64748B' }}>HT/mois</span>
             </div>
-            <p style={{ fontSize:'14px', color:'#94A3B8' }}>30 jours gratuits · puis 19,90€ TTC/mois</p>
+            <p style={{ fontSize:'14px', color:'#94A3B8' }}>30 jours gratuits · puis 19,90€ HT/mois</p>
           </div>
           <button onClick={() => handleCheckout('cabinet')} disabled={loading === 'cabinet'}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', width:'100%', padding:'14px', background:'#7C3AED', borderRadius:'14px', fontSize:'15px', fontWeight:600, color:'#fff', border:'none', cursor:'pointer', marginBottom:'28px' }}>
@@ -147,6 +147,7 @@ export default function PricingPage() {
         <h2 style={{ fontSize:'28px', fontWeight:800, color:'#0F172A', textAlign:'center', marginBottom:'40px', letterSpacing:'-0.5px' }}>Questions fréquentes</h2>
         {[
           { q:"L'essai gratuit nécessite-t-il une carte bancaire ?", r:"Non. Vous accédez à toutes les fonctionnalités pendant 30 jours sans renseigner aucune information de paiement." },
+          { q:"Les prix sont-ils HT ou TTC ?", r:"Nos prix sont indiqués hors taxes (HT). En tant que professionnel en franchise de TVA (art. 293 B du CGI), aucune TVA n'est appliquée sur vos factures." },
           { q:"Que se passe-t-il après les 30 jours ?", r:"Vous recevez un email de rappel 7 jours avant la fin. Si vous ne souscrivez pas, votre compte passe en lecture seule — vos données sont conservées." },
           { q:"Puis-je annuler à tout moment ?", r:"Oui. Aucun engagement, annulation en 1 clic depuis votre compte. Vous gardez accès jusqu'à la fin de la période payée." },
           { q:"Mes données sont-elles sécurisées ?", r:"Oui. Toutes les données sont chiffrées et isolées par compte via Supabase (PostgreSQL, hébergé en Europe)." },

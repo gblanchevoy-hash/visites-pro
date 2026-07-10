@@ -67,6 +67,15 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
     notes: existingUserNotes,
     couleur: rdv?.couleur ?? '',
   });
+  const [recurrence, setRecurrence] = useState<{
+    type: 'none'|'daily'|'weekly'|'biweekly'|'monthly'|'custom';
+    days: number[]; // 0=dim,1=lun,2=mar,3=mer,4=jeu,5=ven,6=sam
+    end: string;
+  }>({
+    type: (rdv as unknown as {recurrence_type?: string})?.recurrence_type as 'none'|'daily'|'weekly'|'biweekly'|'monthly'|'custom' ?? 'none',
+    days: (rdv as unknown as {recurrence_days?: number[]})?.recurrence_days ?? [],
+    end: (rdv as unknown as {recurrence_end?: string})?.recurrence_end ?? '',
+  });
   const [occasionnel, setOccasionnel] = useState(existingOcc);
   const [customDuree, setCustomDuree] = useState(
     !!rdv && ![15,20,30,45,60,90,120].includes(rdv.duree_minutes)
@@ -126,6 +135,45 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
       pushHistory({ type: 'UPDATE_RDV', before: rdv!, after: data as unknown as RendezVous });
       toast.success('Rendez-vous mis à jour');
     } else {
+      // Créer les occurrences récurrentes si besoin
+      if (recurrence.type !== 'none' && recurrence.end) {
+        const recurrenceId = crypto.randomUUID();
+        const occurrences: Record<string, unknown>[] = [];
+        const startDate = new Date(form.date);
+        const endDate = new Date(recurrence.end);
+        let current = new Date(startDate);
+        let count = 0;
+        const MAX_OCCURRENCES = 365;
+
+        while (current <= endDate && count < MAX_OCCURRENCES) {
+          const dateStr = current.toISOString().split('T')[0];
+          const shouldAdd = recurrence.type === 'daily' ? true
+            : recurrence.type === 'weekly' ? current.getDay() === startDate.getDay()
+            : recurrence.type === 'biweekly' ? (current.getDay() === startDate.getDay() && Math.floor((current.getTime() - startDate.getTime()) / (7 * 24 * 3600 * 1000)) % 2 === 0)
+            : recurrence.type === 'monthly' ? current.getDate() === startDate.getDate()
+            : recurrence.type === 'custom' ? recurrence.days.includes(current.getDay())
+            : false;
+
+          if (shouldAdd && dateStr !== form.date) {
+            occurrences.push({
+              ...payload,
+              date: dateStr,
+              recurrence_type: recurrence.type,
+              recurrence_days: recurrence.days.length ? recurrence.days : null,
+              recurrence_end: recurrence.end,
+              recurrence_id: recurrenceId,
+            });
+          }
+          count++;
+          current.setDate(current.getDate() + 1);
+        }
+
+        if (occurrences.length > 0) {
+          await supabase.from('rendez_vous').insert(occurrences);
+        }
+        payload = { ...payload, recurrence_type: recurrence.type, recurrence_days: recurrence.days.length ? recurrence.days : null, recurrence_end: recurrence.end, recurrence_id: recurrenceId };
+      }
+
       const { data, error } = await supabase.from('rendez_vous').insert(payload).select('*, patient:patients(*)').single();
       if (error) { toast.error('Erreur création'); setLoading(false); return; }
       const created = data as unknown as RendezVous;
@@ -159,7 +207,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up overflow-hidden">
         {/* Header */}
         <div className="topbar-gradient px-6 py-4 flex items-center justify-between">
@@ -328,6 +376,46 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
             <label className="label">Notes</label>
             <textarea className="input resize-none" rows={2} value={form.notes} onChange={(e) => set('notes', e.target.value)} />
           </div>
+
+          {/* ── Récurrence ── */}
+          {!rdv && (
+            <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'12px', padding:'14px 16px' }}>
+              <label className="label" style={{ marginBottom:'10px', display:'block' }}>🔁 Répéter ce rendez-vous</label>
+              <select className="input" value={recurrence.type} onChange={e => setRecurrence(r => ({ ...r, type: e.target.value as typeof r.type }))}>
+                <option value="none">Une seule fois (pas de répétition)</option>
+                <option value="daily">Tous les jours</option>
+                <option value="weekly">Toutes les semaines</option>
+                <option value="biweekly">Toutes les 2 semaines</option>
+                <option value="monthly">Tous les mois</option>
+                <option value="custom">Jours personnalisés</option>
+              </select>
+
+              {recurrence.type === 'custom' && (
+                <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginTop:'10px' }}>
+                  {['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'].map((d, i) => (
+                    <button key={i} type="button"
+                      onClick={() => setRecurrence(r => ({
+                        ...r,
+                        days: r.days.includes(i) ? r.days.filter(x => x !== i) : [...r.days, i]
+                      }))}
+                      style={{ padding:'4px 10px', borderRadius:'8px', fontSize:'12px', fontWeight:600, cursor:'pointer', border:'1.5px solid', borderColor: recurrence.days.includes(i) ? '#2563EB' : '#E2E8F0', background: recurrence.days.includes(i) ? '#EFF6FF' : '#fff', color: recurrence.days.includes(i) ? '#2563EB' : '#64748B' }}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {recurrence.type !== 'none' && (
+                <div style={{ marginTop:'10px' }}>
+                  <label className="label">Répéter jusqu'au</label>
+                  <input type="date" className="input" value={recurrence.end}
+                    min={form.date}
+                    onChange={e => setRecurrence(r => ({ ...r, end: e.target.value }))}
+                    required={recurrence.type !== ('none' as string)} />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="btn-secondary flex-1 justify-center">Annuler</button>
