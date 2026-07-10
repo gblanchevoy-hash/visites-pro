@@ -13,7 +13,7 @@ interface Props {
   rdv: RendezVous | null;
   defaultDate: string;
   defaultTime?: string;
-  onClose: () => void;
+  onClose: (forceRefresh?: boolean) => void;
 }
 
 const STATUTS = [
@@ -223,7 +223,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg ml-1">
+            <button onClick={() => onClose()} className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg ml-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -378,7 +378,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
           </div>
 
           {/* ── Récurrence ── */}
-          {!rdv && (
+          {(
             <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'12px', padding:'14px 16px' }}>
               <label className="label" style={{ marginBottom:'10px', display:'block' }}>🔁 Répéter ce rendez-vous</label>
               <select className="input" value={recurrence.type} onChange={e => setRecurrence(r => ({ ...r, type: e.target.value as typeof r.type }))}>
@@ -418,7 +418,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1 justify-center">Annuler</button>
+            <button type="button" onClick={() => onClose()} className="btn-secondary flex-1 justify-center">Annuler</button>
             <button type="submit" className="btn-primary flex-1 justify-center" disabled={loading}>
               {loading ? 'Enregistrement…' : rdv ? 'Mettre à jour' : 'Créer'}
             </button>

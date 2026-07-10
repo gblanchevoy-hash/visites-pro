@@ -83,7 +83,7 @@ function useNowMinute() {
 }
 
 export default function PlanningPage() {
-  const { rendezVous, setRendezVous, updateRendezVous, pushHistory, user, settings } = useAppStore();
+  const { rendezVous, setRendezVous, updateRendezVous, pushHistory, user, settings, loadRendezVous } = useAppStore();
   const [view, setView]         = useState<ViewMode>('semaine');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showModal, setShowModal]     = useState(false);
@@ -867,7 +867,15 @@ export default function PlanningPage() {
 
       {showModal && (
         <RdvModal rdv={editRdv} defaultDate={selectedDate} defaultTime={selectedTime ?? undefined}
-          onClose={() => { setShowModal(false); setEditRdv(null); setSelectedTime(null); }} />
+          onClose={(forceRefresh) => {
+            setShowModal(false);
+            setEditRdv(null);
+            setSelectedTime(null);
+            // Recharger tous les RDVs si une série récurrente vient d'être créée
+            if (forceRefresh) {
+              loadRendezVous();
+            }
+          }} />
       )}
 
       {/* ── Context menu ── */}

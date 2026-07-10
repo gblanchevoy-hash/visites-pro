@@ -68,9 +68,7 @@ export default function PricingPage() {
 
       {/* Header */}
       <div style={{ textAlign:'center', padding:'64px 24px 48px' }}>
-        <div style={{ display:'inline-flex', alignItems:'center', padding:'6px 16px', background:'#EFF6FF', borderRadius:'999px', border:'1px solid #BFDBFE', fontSize:'13px', fontWeight:600, color:'#2563EB', marginBottom:'24px' }}>
-          🎉 30 jours d'essai gratuit inclus — sans carte bancaire
-        </div>
+
         <h1 style={{ fontSize:'48px', fontWeight:900, color:'#0F172A', letterSpacing:'-1.5px', marginBottom:'16px' }}>
           Tarifs simples et transparents
         </h1>
