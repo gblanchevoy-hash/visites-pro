@@ -122,7 +122,13 @@ export default function PlanningPage() {
   const openEdit = useCallback((rdv: RendezVous) => { setEditRdv(rdv); setShowModal(true); }, []);
 
   // ── Travel segments ──
+  // Cache key basé sur les coordonnées GPS (pas les IDs) pour que les RDVs récurrents
+  // avec le même patient partagent le même cache et affichent des distances cohérentes
   const segKey = (a: string, b: string) => `${a}->${b}`;
+  const coordKey = (lat1?: number|null, lng1?: number|null, lat2?: number|null, lng2?: number|null) =>
+    (lat1 && lng1 && lat2 && lng2)
+      ? `${lat1.toFixed(4)},${lng1.toFixed(4)}->${lat2.toFixed(4)},${lng2.toFixed(4)}`
+      : null;
   const getRdvCoords = (rdv: RendezVous) => {
     if (rdv.patient?.lat && rdv.patient?.lng) return { lat: rdv.patient.lat, lng: rdv.patient.lng };
     if (rdv.lat && rdv.lng) return { lat: rdv.lat, lng: rdv.lng };
@@ -154,13 +160,27 @@ export default function PlanningPage() {
     const updates: Record<string, { km: number; min: number } | null> = {};
     for (let i = 0; i < seq.length - 1; i++) {
       const k = segKey(seq[i].id, seq[i+1].id);
+      // Vérifier aussi par coordonnées GPS
+      const ck2 = coordKey(seq[i].lat, seq[i].lng, seq[i+1].lat, seq[i+1].lng);
+      if (ck2 && segmentCache[ck2] !== undefined) {
+        setSegmentCache(k, segmentCache[ck2]);
+        continue;
+      }
       if (segmentCache[k] !== undefined) continue;
       await new Promise(r => setTimeout(r, 350));
       const res = await calculerSegment(seq[i], seq[i+1], settings?.ors_api_key ?? undefined, user?.id);
       updates[k] = res ? { km: res.distance_km, min: res.duree_min } : null;
     }
     if (Object.keys(updates).length) {
-      Object.entries(updates).forEach(([k, v]) => setSegmentCache(k, v));
+      // Stocker par IDs ET par coordonnées GPS pour cohérence des RDVs récurrents
+      for (let i = 0; i < seq.length - 1; i++) {
+        const k = segKey(seq[i].id, seq[i+1].id);
+        if (updates[k] !== undefined) {
+          setSegmentCache(k, updates[k]);
+          const ck = coordKey(seq[i].lat, seq[i].lng, seq[i+1].lat, seq[i+1].lng);
+          if (ck) setSegmentCache(ck, updates[k]);
+        }
+      }
     }
     computingRef.current = false;
   }, [settings, segmentCache]);

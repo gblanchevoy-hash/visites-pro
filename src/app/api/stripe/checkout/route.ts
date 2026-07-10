@@ -5,8 +5,8 @@ import Stripe from 'stripe';
 const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY ?? 'sk_placeholder', { apiVersion: '2026-06-24.dahlia' });
 
 const PRICE_IDS: Record<string, string> = {
-  solo:    'price_1TrGlVAOVWcgpAAos01PLe48',
-  cabinet: 'price_1TrGopAOVWcgpAAofnR7P0Hs',
+  solo:    'price_1Trhz6AOVWcgpAAojZYbwfg3',
+  cabinet: 'price_1TriMOAOVWcgpAAoeGzWTPdH',
 };
 
 export async function POST(req: NextRequest) {

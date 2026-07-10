@@ -66,12 +66,12 @@ function AuthInner() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;}
+        html,body{height:100%;overflow:hidden;}
 
         /* ─── ROOT ─── */
         .p{
           font-family:'Inter',-apple-system,sans-serif;
-          width:100vw;min-height:100vh;overflow-x:hidden;overflow-y:auto;
+          width:100vw;height:100vh;overflow:hidden;
           background:#FFFFFF;
           position:relative;
         }
@@ -310,14 +310,13 @@ function AuthInner() {
           .hl{font-size:44px;line-height:50px;letter-spacing:-2px;}
           .desc{font-size:16px;margin-bottom:36px;}
           .main{padding:0 36px 0 40px;}
-          .col-left{padding-right:0;}
           .badge{margin-bottom:24px;}
           .cards{gap:12px;}
           .card{padding:20px 16px;}
           .ct{font-size:13px;}
           .cd{font-size:12px;}
-          .fc{width:400px;padding:36px 32px;}
-          .fh{font-size:30px;}
+          .fc{width:380px;padding:36px 28px;}
+          .fh{font-size:28px;}
           .fi{height:54px;}
           .btn{height:54px;font-size:15px;}
         }
@@ -326,43 +325,28 @@ function AuthInner() {
         @media(max-width:1023px){
           html,body{overflow-y:auto !important;height:auto;}
           .p{height:auto;min-height:100vh;overflow-y:auto;}
-
-          /* Layout : formulaire EN PREMIER sur mobile, puis texte */
           .main{
             grid-template-columns:1fr;
-            grid-template-rows:auto auto;
-            padding:16px 20px 40px;
-            gap:24px;
+            padding:20px 20px 48px;
+            gap:28px;
             align-items:start;
           }
-
-          /* Formulaire passe EN PREMIER sur mobile */
           .cr{order:-1;}
           .cl{order:1;}
-
-          /* Halos et tracé masqués */
           .route-svg,.route-glow,.h1,.h2,.h3,.h4{display:none;}
-
-          /* Logo plus compact */
           .logo-bar{padding:16px 20px 0;}
-
-          /* Titre adapté */
-          .hl{font-size:30px;line-height:36px;letter-spacing:-1px;margin-bottom:12px;}
-          .desc{font-size:14px;margin-bottom:20px;max-width:100%;}
-          .badge{height:30px;font-size:11px;margin-bottom:16px;display:none;}
-
-          /* Cards masquées sur mobile pour gagner de la place */
+          .hl{font-size:28px;line-height:34px;letter-spacing:-1px;margin-bottom:12px;}
+          .desc{font-size:14px;margin-bottom:0;max-width:100%;}
+          .badge{display:none;}
           .cards{display:none;}
-
-          /* Formulaire pleine largeur */
-          .col-right{justify-content:stretch;}
           .fc{width:100%;max-width:100%;border-radius:20px;padding:24px 20px;}
-          .fh{font-size:26px;margin-bottom:4px;}
-          .fs{font-size:13px;margin-bottom:20px;}
+          .fh{font-size:24px;margin-bottom:4px;}
+          .fs{font-size:13px;margin-bottom:18px;}
           .fi{height:52px;font-size:16px;border-radius:12px;}
           .btn{height:52px;border-radius:12px;font-size:15px;margin-top:4px;}
           .field{margin-bottom:10px;}
-          .links{margin-top:16px;}
+          .links{margin-top:14px;}
+          .ft{padding:0 20px 20px;flex-direction:column;gap:8px;text-align:center;}
         }
 
         /* ── Mobile (≤480px) ── */

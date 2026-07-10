@@ -52,7 +52,7 @@ export default function StatistiquesPage() {
         const monthFrais = (frais ?? []).find((f) => f.mois === monthNum);
 
         // If a manual/auto frais entry exists for this month, use it.
-        // Otherwise, estimate km directly from the tours (haversine between consecutive visits).
+        // Use frais_kilometriques as authoritative km source (same as rapport fiscal)
         let kmTotal = monthFrais?.km_parcourus ?? 0;
         if (!monthFrais) {
           const byDay: Record<string, RdvRow[]> = {};
