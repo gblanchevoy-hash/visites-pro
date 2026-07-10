@@ -4,12 +4,15 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAppStore } from '@/lib/stores/appStore';
 import Sidebar from './Sidebar';
+import SubscriptionBanner from '@/components/ui/SubscriptionBanner';
+import { useSubscription } from '@/lib/hooks/useSubscription';
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { setUser, loadPatients, loadSettings, setIsOnline } = useAppStore();
+  const { sub } = useSubscription();
   const [ready, setReady] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
