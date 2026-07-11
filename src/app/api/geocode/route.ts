@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { searchHere } from './here';
 import { checkRateLimit } from '@/lib/server/rateLimiter';
 import { logApiCall } from '@/lib/server/apiLogger';
 
@@ -146,7 +147,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ results: google, source: 'google' });
     }
 
-    // Photon en priorité (meilleure couverture POI/bâtiments/résidences)
+    // HERE en priorité 1 — geocoding avec trafic et données réelles
+    const here = await searchHere(q);
+    if (here && here.length > 0) {
+      setCached(cacheKey, here);
+      logApiCall({ api: 'geocode', userId, success: true, durationMs: Date.now() - started });
+      return NextResponse.json({ results: here, source: 'here' });
+    }
+
+    // Photon en priorité 2 (meilleure couverture POI/bâtiments/résidences)
     const photon = await searchPhoton(q);
     if (photon.length > 0) {
       // Compléter avec data.gouv pour les adresses précises françaises

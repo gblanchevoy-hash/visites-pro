@@ -11,7 +11,7 @@ import {
   formatDate, formatDateLong, getWeekDays, getMonthDays,
   toISODate, isSameDay, addDays,
 } from '@/lib/utils/dates';
-import { calculerSegment, distanceHaversine, formatDuree } from '@/lib/utils/geo';
+import { calculerSegment, calculerSegmentAvecTrafic, distanceHaversine, formatDuree } from '@/lib/utils/geo';
 import { ChevronLeft, ChevronRight, Plus, Car, Clock, Calendar, Users, ArrowRight as ArrowRightIcon } from 'lucide-react';
 import RdvModal from '@/components/planning/RdvModal';
 import { cn } from '@/lib/utils/cn';

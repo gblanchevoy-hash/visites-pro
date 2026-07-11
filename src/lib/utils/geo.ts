@@ -61,6 +61,27 @@ export async function calculerItineraire(
   }
 }
 
+// Calculer un segment avec HERE (trafic réel) + fallback ORS
+export async function calculerSegmentAvecTrafic(
+  from: { lat: number | null; lng: number | null; id: string },
+  to: { lat: number | null; lng: number | null; id: string },
+  departureTime?: string, // ISO string ex: "2026-07-11T08:00:00"
+): Promise<{ distance_km: number; duree_min: number; has_motorway?: boolean; with_traffic?: boolean } | null> {
+  if (!from.lat || !from.lng || !to.lat || !to.lng) return null;
+  try {
+    const res = await fetch('/api/here-route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, departureTime }),
+    });
+    const data = await res.json();
+    if (!data.fallback && data.distance_km) {
+      return { distance_km: data.distance_km, duree_min: data.duree_min, with_traffic: true };
+    }
+  } catch { /* fallback */ }
+  return null; // caller doit utiliser calculerSegment comme fallback
+}
+
 export async function calculerSegment(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
