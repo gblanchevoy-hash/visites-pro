@@ -190,6 +190,24 @@ export default function PlanningPage() {
     days.forEach(d => { const r = rdvsForDate(d); if (r.length) fetchTravelTimes(r); });
   }, [view, currentDate, rendezVous, settings?.ors_api_key]);
 
+  // ── Détection chevauchements ──
+  const getOverlaps = useCallback((rdvs: RendezVous[]): Set<string> => {
+    const overlapping = new Set<string>();
+    for (let i = 0; i < rdvs.length; i++) {
+      for (let j = i + 1; j < rdvs.length; j++) {
+        const a = rdvs[i], b = rdvs[j];
+        if (a.date !== b.date) continue;
+        const aStart = a.heure_debut, aEnd = a.heure_fin;
+        const bStart = b.heure_debut, bEnd = b.heure_fin;
+        if (aStart < bEnd && aEnd > bStart) {
+          overlapping.add(a.id);
+          overlapping.add(b.id);
+        }
+      }
+    }
+    return overlapping;
+  }, []);
+
   // ── Week stats ──
   const weekDays   = getWeekDays(currentDate);
   const weekRdvs   = weekDays.flatMap(d => rdvsForDate(d));
@@ -436,10 +454,11 @@ export default function PlanningPage() {
   };
 
   // ── RDV Card block ──
-  const RdvCard = ({ rdv, style, onPointerDown }: {
+  const RdvCard = ({ rdv, style, onPointerDown, hasOverlap }: {
     rdv: RendezVous;
     style: React.CSSProperties;
     onPointerDown: (e: React.PointerEvent) => void;
+    hasOverlap?: boolean;
   }) => {
     const { dot, hColor } = getRdvColors(rdv);
     const isDrag = draggingId === rdv.id;
@@ -541,6 +560,7 @@ export default function PlanningPage() {
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
             userSelect: 'none',
+            ...(hasOverlap ? { border: '2px solid #EF4444', boxShadow: '0 0 0 2px rgba(239,68,68,0.2)' } : {}),
           }}>
           {/* Time row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
@@ -626,7 +646,8 @@ export default function PlanningPage() {
                 )}
                 <RdvCard rdv={rdv}
                   style={{ top: `${top}px`, height: `${h}px`, left: '56px', right: '4px' }}
-                  onPointerDown={e => ref.current && startDrag(e, rdv, ref.current)} />
+                  onPointerDown={e => ref.current && startDrag(e, rdv, ref.current)}
+                  hasOverlap={getOverlaps(dayRdvs).has(rdv.id)} />
               </div>
             );
           })}
@@ -709,7 +730,8 @@ export default function PlanningPage() {
                   )}
                   <RdvCard rdv={rdv}
                     style={{ top: `${top}px`, height: `${h}px`, left, width: w }}
-                    onPointerDown={e => ref.current && startDrag(e, rdv, ref.current, days)} />
+                    onPointerDown={e => ref.current && startDrag(e, rdv, ref.current, days)}
+                    hasOverlap={getOverlaps(rdvsForDate(day)).has(rdv.id)} />
                 </div>
               );
             });
