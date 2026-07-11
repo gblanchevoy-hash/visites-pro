@@ -169,7 +169,15 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
         }
 
         if (occurrences.length > 0) {
-          await supabase.from('rendez_vous').insert(occurrences);
+          const { data: newOccurrences } = await supabase
+            .from('rendez_vous')
+            .insert(occurrences)
+            .select('*, patient:patients(*)');
+          // Ajouter immédiatement au store sans attendre le rechargement
+          if (newOccurrences) {
+            const store = (await import('@/lib/stores/appStore')).useAppStore.getState();
+            newOccurrences.forEach((rdv: unknown) => store.addRendezVous(rdv as import('@/types').RendezVous));
+          }
         }
         payload = { ...payload, recurrence_type: recurrence.type, recurrence_days: recurrence.days.length ? recurrence.days : null, recurrence_end: recurrence.end, recurrence_id: recurrenceId };
       }

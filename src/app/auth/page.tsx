@@ -66,12 +66,12 @@ function AuthInner() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;overflow:hidden;}
+        html,body{margin:0;padding:0;}
 
         /* ─── ROOT ─── */
         .p{
           font-family:'Inter',-apple-system,sans-serif;
-          width:100vw;height:100vh;overflow:hidden;
+          width:100vw;
           background:#FFFFFF;
           position:relative;
         }
@@ -304,6 +304,12 @@ function AuthInner() {
         /* ─── ANIMATION TRAJET ─── */
         .route-path{stroke-dasharray:1200;stroke-dashoffset:1200;animation:drawRoute 2.2s .3s ease forwards;}
         @keyframes drawRoute{to{stroke-dashoffset:0;}}
+
+        /* ── Desktop (≥1024px) : tient sur l'écran sans scroll ── */
+        @media(min-width:1024px){
+          html,body{height:100%;overflow:hidden;}
+          .p{height:100vh;overflow:hidden;}
+        }
 
         /* ── Tablette large (1024–1199px) ── */
         @media(max-width:1199px){
