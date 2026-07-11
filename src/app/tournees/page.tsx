@@ -7,7 +7,7 @@ import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { RendezVous } from '@/types';
 import { toISODate, formatDate, getWeekDays, addDays, addMinutes } from '@/lib/utils/dates';
-import { calculerItineraire, calculerSegment, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine } from '@/lib/utils/geo';
+import { calculerItineraire, calculerSegment, calculerSegmentAvecTrafic, optimiserTournee, formatDuree, calculateFraisKm, distanceHaversine } from '@/lib/utils/geo';
 import { exportTourneePDF, exportTourneeExcel } from '@/lib/utils/exports';
 import toast from 'react-hot-toast';
 import { MapPin, Zap, Navigation, FileText, Download, ChevronLeft, ChevronRight, Home, Flag, Car, Clock, ChevronDown, ChevronUp } from 'lucide-react';
@@ -105,8 +105,10 @@ export default function TourneesPage() {
         continue;
       }
       await new Promise(r => setTimeout(r, 250));
-      const res = await calculerSegment(sequence[i], sequence[i+1], settings?.ors_api_key ?? undefined, user?.id);
-      const segValue = res ? { km: res.distance_km, min: res.duree_min, has_motorway: res.has_motorway ?? false } : null;
+      // HERE avec trafic en priorité, ORS en fallback
+      const hereRes = await calculerSegmentAvecTrafic(sequence[i], sequence[i+1]);
+      const res = hereRes ?? await calculerSegment(sequence[i], sequence[i+1], settings?.ors_api_key ?? undefined, user?.id);
+      const segValue = res ? { km: res.distance_km, min: res.duree_min, has_motorway: (res as {has_motorway?:boolean}).has_motorway ?? false } : null;
       segs.push(segValue);
       // Save to shared cache so Planning sees the same values
       setSegmentCache(cacheKey, segValue);

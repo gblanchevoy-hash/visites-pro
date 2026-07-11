@@ -168,7 +168,19 @@ export default function PlanningPage() {
       }
       if (segmentCache[k] !== undefined) continue;
       await new Promise(r => setTimeout(r, 350));
-      const res = await calculerSegment(seq[i], seq[i+1], settings?.ors_api_key ?? undefined, user?.id);
+
+      // HERE avec trafic en priorité, ORS en fallback
+      const nextRdv = rdvs.find((r: RendezVous) => r.id === seq[i+1].id);
+      const departureISO = nextRdv?.heure_debut && nextRdv?.date
+        ? `${nextRdv.date}T${nextRdv.heure_debut}:00`
+        : undefined;
+      const hereRes = await calculerSegmentAvecTrafic(seq[i], seq[i+1], departureISO);
+      let res;
+      if (hereRes) {
+        res = { distance_km: hereRes.distance_km, duree_min: hereRes.duree_min };
+      } else {
+        res = await calculerSegment(seq[i], seq[i+1], settings?.ors_api_key ?? undefined, user?.id);
+      }
       updates[k] = res ? { km: res.distance_km, min: res.duree_min } : null;
     }
     if (Object.keys(updates).length) {
