@@ -68,10 +68,8 @@ function ResetPasswordInner() {
 
         {/* Logo */}
         <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'40px' }}>
-          <div style={{ width:'38px', height:'38px', borderRadius:'11px', background:'#2563EB', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 14px rgba(37,99,235,.30)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
-            </svg>
+          <div style={{ width:'38px', height:'38px', borderRadius:'11px', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 14px rgba(37,99,235,.30)' }}>
+            <img src="/icons/logo.png" alt="Itilib" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
           </div>
           <div>
             <p style={{ fontSize:'17px', fontWeight:800, color:'#0F172A', lineHeight:1 }}>Itilib</p>

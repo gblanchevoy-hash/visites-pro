@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import EmptyState from '@/components/ui/EmptyState';
+import { PatientsSkeleton } from '@/components/ui/Skeleton';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { Patient } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import toast from 'react-hot-toast';
-import { Search, Plus, Edit2, Trash2, Phone, Mail, MapPin, Filter, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Phone, Mail, MapPin, X } from 'lucide-react';
 import PatientModal from '@/components/patients/PatientModal';
 
 export default function PatientsPage() {

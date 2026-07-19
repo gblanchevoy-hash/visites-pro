@@ -188,11 +188,20 @@ export const useAppStore = create<AppState>()(
       cachedOrsKey: '',
       setCachedOrsKey: (cachedOrsKey) => set({ cachedOrsKey }),
 
-      // Shared travel segment cache
+      // Shared travel segment cache (limité à 500 entrées max)
       segmentCache: {},
-      setSegmentCache: (key, value) => set(state => ({
-        segmentCache: { ...state.segmentCache, [key]: value }
-      })),
+      setSegmentCache: (key, value) => set(state => {
+        const current = state.segmentCache;
+        const keys = Object.keys(current);
+        // Si > 500 entrées, supprimer les 100 plus anciennes (FIFO approximatif)
+        if (keys.length >= 500) {
+          const toDelete = keys.slice(0, 100);
+          const pruned: typeof current = { ...current };
+          toDelete.forEach(k => delete pruned[k]);
+          return { segmentCache: { ...pruned, [key]: value } };
+        }
+        return { segmentCache: { ...current, [key]: value } };
+      }),
 
       isOnline: true,
       setIsOnline: (isOnline) => set({ isOnline }),
@@ -246,10 +255,24 @@ export const useAppStore = create<AppState>()(
       loadRendezVous: async (dateDebut?: string, dateFin?: string) => {
         const { user } = get();
         if (!user) return;
-        let query = supabase.from('rendez_vous').select('*, patient:patients(*)').eq('user_id', user.id).order('date').order('heure_debut');
-        if (dateDebut) query = query.gte('date', dateDebut);
-        if (dateFin) query = query.lte('date', dateFin);
-        const { data } = await query;
+
+        // Fenêtre glissante par défaut : 2 mois avant → 4 mois après
+        // Évite de charger des milliers de RDV pour les utilisateurs avec beaucoup d'historique
+        const now = new Date();
+        const debut = dateDebut ?? new Date(now.getFullYear(), now.getMonth() - 2, 1)
+          .toISOString().split('T')[0];
+        const fin = dateFin ?? new Date(now.getFullYear(), now.getMonth() + 4, 0)
+          .toISOString().split('T')[0];
+
+        const { data } = await supabase
+          .from('rendez_vous')
+          .select('*, patient:patients(*)')
+          .eq('user_id', user.id)
+          .gte('date', debut)
+          .lte('date', fin)
+          .order('date')
+          .order('heure_debut');
+
         if (data) set({ rendezVous: data as unknown as RendezVous[] });
       },
 

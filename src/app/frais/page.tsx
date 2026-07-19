@@ -5,7 +5,7 @@ import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
-import { Plus, Download, Trash2, Calculator, RefreshCw, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Loader2, CheckCircle2 } from 'lucide-react';
 import { distanceHaversine } from '@/lib/utils/geo';
 import { RendezVous } from '@/types';
 

@@ -4,7 +4,7 @@ import AppShell from '@/components/layout/AppShell';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
-import { FileText, Printer, Download, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Printer, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -135,8 +135,8 @@ export default function RapportFiscalPage() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', paddingBottom:'24px', borderBottom:'2px solid #0F172A', marginBottom:'32px' }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px' }}>
-                <div style={{ width:'36px', height:'36px', background:'#2563EB', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/></svg>
+                <div style={{ width:'36px', height:'36px', borderRadius:'10px', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <img src="/icons/logo.png" alt="Itilib" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                 </div>
                 <div>
                   <p style={{ fontSize:'18px', fontWeight:800, color:'#0F172A', letterSpacing:'-0.3px' }}>Itilib</p>

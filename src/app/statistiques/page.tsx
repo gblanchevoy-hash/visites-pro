@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
 import { formatDuree, distanceHaversine } from '@/lib/utils/geo';
 import { exportStatsPDF, exportStatsExcel } from '@/lib/utils/exports';
-import { BarChart3, TrendingUp, Car, Clock, Users, Download } from 'lucide-react';
+import { TrendingUp, Car, Clock, Users, Download } from 'lucide-react';
 import { StatsMensuelles } from '@/types';
 
 const MOIS_COURTS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];

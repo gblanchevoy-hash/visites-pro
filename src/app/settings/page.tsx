@@ -7,7 +7,7 @@ import { useSubscription } from '@/lib/hooks/useSubscription';
 import { supabase } from '@/lib/supabase/client';
 import { UserSettings } from '@/types';
 import toast from 'react-hot-toast';
-import { Key, Clock, Loader2, CheckCircle2, User, Shield, Save, CreditCard, AlertTriangle } from 'lucide-react';
+import { Key, Clock, Loader2, CheckCircle2, User, Shield, Save, AlertTriangle } from 'lucide-react';
 
 const S = {
   page: { flex:1, background:'#F8FAFC', overflow:'auto' as const, padding:'16px' },

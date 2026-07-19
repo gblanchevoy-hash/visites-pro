@@ -173,9 +173,10 @@ function AuthInner() {
         .lay{position:relative;z-index:10;width:100%;height:100%;display:flex;flex-direction:column;}
         .logo-bar{padding:36px 56px 0;display:flex;align-items:center;gap:12px;
           animation:fadeUp .6s ease both;}
-        .logo-ic{width:40px;height:40px;border-radius:12px;background:#3B6EFF;
+        .logo-ic{width:56px;height:56px;border-radius:14px;overflow:hidden;
           display:flex;align-items:center;justify-content:center;
           box-shadow:0 4px 16px rgba(59,110,255,.30);flex-shrink:0;}
+        .logo-ic img{width:100%;height:100%;object-fit:cover;}
         .logo-n{font-size:17px;font-weight:800;color:#0F172A;letter-spacing:-.3px;line-height:1;}
         .logo-s{font-size:11px;color:#94A3B8;margin-top:2px;}
 
@@ -428,9 +429,7 @@ function AuthInner() {
           {/* Logo */}
           <div className="logo-bar">
             <div className="logo-ic">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
-              </svg>
+              <img src="/icons/logo.png" alt="Itilib" />
             </div>
             <div>
               <div className="logo-n">Itilib</div>
@@ -541,6 +540,7 @@ function AuthInner() {
             <div className="ftl">
               <a href="/legal?tab=mentions">Mentions légales</a>
               <a href="/legal?tab=confidentialite">Confidentialité</a>
+              <a href="/status">Statut</a>
             </div>
           </footer>
         </div>

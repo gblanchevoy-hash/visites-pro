@@ -120,8 +120,54 @@ export default function TourneesPage() {
       const result = await calculerItineraire(pts, settings?.ors_api_key ?? undefined, user?.id);
       if (result) setRouteGeo(result.geometry);
     }
+
+    // ── Synchronisation automatique → frais_kilometriques ──
+    // Calcule le total km de la tournée et met à jour le mois correspondant
+    const totalKmTournee = segs.reduce((sum, s) => sum + (s?.km ?? 0), 0);
+    if (totalKmTournee > 0 && user && selectedDay) {
+      try {
+        const dateTournee = selectedDay;
+        const mois = dateTournee.getMonth() + 1; // 1-12
+        const annee = dateTournee.getFullYear();
+        const bareme = settings?.bareme_km ?? 0.62;
+
+        // Récupérer le total km existant pour ce mois
+        const { data: existing } = await supabase
+          .from('frais_kilometriques')
+          .select('id, km_parcourus')
+          .eq('user_id', user.id)
+          .eq('mois', mois)
+          .eq('annee', annee)
+          .single();
+
+        if (existing) {
+          // Additionner les km de cette tournée aux km existants du mois
+          const newKm = existing.km_parcourus + totalKmTournee;
+          await supabase.from('frais_kilometriques').update({
+            km_parcourus: newKm,
+            montant_total: newKm * bareme,
+          }).eq('id', existing.id);
+        } else {
+          // Créer l'entrée pour ce mois
+          await supabase.from('frais_kilometriques').insert({
+            user_id: user.id,
+            mois,
+            annee,
+            km_parcourus: totalKmTournee,
+            bareme,
+            montant_total: totalKmTournee * bareme,
+          });
+        }
+        toast.success(`Itinéraire calculé · ${totalKmTournee.toFixed(1)} km ajoutés aux frais de ${dateTournee.toLocaleString('fr-FR', { month:'long' })}`);
+      } catch (err) {
+        console.error('Sync frais km error:', err);
+        toast.success('Itinéraire calculé !');
+      }
+    } else {
+      toast.success('Itinéraire calculé !');
+    }
+
     setComputing(false);
-    toast.success('Itinéraire calculé !');
   };
 
   // Save adjusted GPS coords back to the right table (patient or RDV occasionnel)

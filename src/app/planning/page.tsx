@@ -3,6 +3,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import EmptyState from '@/components/ui/EmptyState';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { toastWithUndo } from '@/components/ui/UndoToast';
+import { triggerSave } from '@/components/ui/SaveIndicator';
 import Topbar from '@/components/layout/Topbar';
 import { useAppStore } from '@/lib/stores/appStore';
 import { supabase } from '@/lib/supabase/client';
@@ -257,6 +261,7 @@ export default function PlanningPage() {
 
   // ── Context menu state ──
   const [ctxMenu, setCtxMenu] = useState<{ rdv: RendezVous; x: number; y: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<RendezVous | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LONG_PRESS_DURATION = 500; // ms pour déclencher le menu sur touch
 
@@ -267,15 +272,21 @@ export default function PlanningPage() {
     return () => window.removeEventListener('click', close);
   }, [ctxMenu]);
 
-  const handleCtxSupprimer = async (rdv: RendezVous) => {
+  const handleCtxSupprimer = (rdv: RendezVous) => {
     setCtxMenu(null);
-    if (!confirm(`Supprimer le RDV de ${getRdvLabel(rdv)} ?`)) return;
-    const { error } = await supabase.from('rendez_vous').delete().eq('id', rdv.id);
+    setConfirmDelete(rdv);
+  };
+
+  const doSupprimer = async () => {
+    if (!confirmDelete) return;
+    const { error } = await supabase.from('rendez_vous').delete().eq('id', confirmDelete.id);
     if (error) { toast.error('Erreur suppression'); return; }
     const store = useAppStore.getState();
-    store.removeRendezVous(rdv.id);
-    pushHistory({ type: 'DELETE_RDV', rdv });
+    store.removeRendezVous(confirmDelete.id);
+    pushHistory({ type: 'DELETE_RDV', rdv: confirmDelete });
+    triggerSave('saved');
     toast.success('RDV supprimé');
+    setConfirmDelete(null);
   };
 
   const handleCtxDupliquer = async (rdv: RendezVous) => {
@@ -445,7 +456,16 @@ export default function PlanningPage() {
         const updated = data as unknown as RendezVous;
         pushHistory({ type: 'UPDATE_RDV', before: r, after: updated });
         updateRendezVous(updated);
-        toast.success(`Déplacé → ${fmtH(newH)}`);
+        triggerSave('saved');
+        toastWithUndo({
+          message: `${getRdvLabel(r)} déplacé → ${fmtH(newH)}`,
+          onUndo: async () => {
+            const { data: reverted } = await supabase.from('rendez_vous')
+              .update({ date: r.date, heure_debut: r.heure_debut, heure_fin: r.heure_fin })
+              .eq('id', r.id).select('*, patient:patients(*)').single();
+            if (reverted) updateRendezVous(reverted as unknown as RendezVous);
+          },
+        });
       }
     }
 
@@ -568,7 +588,7 @@ export default function PlanningPage() {
             boxShadow: isDrag ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
             padding: '7px 10px',
             overflow: 'hidden',
-            touchAction: 'none',
+            touchAction: 'pan-y',
             WebkitTouchCallout: 'none',
             WebkitUserSelect: 'none',
             userSelect: 'none',
@@ -834,16 +854,18 @@ export default function PlanningPage() {
         </div>
       } />
 
-      {/* Calendar content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {view === 'jour'    && <DayView />}
-        {view === 'semaine' && <WeekView />}
-        {view === 'mois'    && <MonthView />}
-      </div>
+      {/* Calendar content + bottom bar in a proper flex column */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Scrollable calendar area */}
+        <div className="flex-1 min-h-0" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {view === 'jour'    && <DayView />}
+          {view === 'semaine' && <WeekView />}
+          {view === 'mois'    && <MonthView />}
+        </div>
 
-      {/* Bottom stats bar — week view only */}
-      {view === 'semaine' && (
-        <div className="flex-shrink-0 bg-white border-t border-slate-200 shadow-lg">
+        {/* Bottom stats bar — week view only */}
+        {view === 'semaine' && (
+          <div className="flex-shrink-0 bg-white border-t border-slate-200 shadow-lg" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           <div className="flex items-center justify-between px-6 py-3 gap-6 flex-wrap">
             {/* Récapitulatif label */}
             <div className="flex items-center gap-3">
@@ -953,7 +975,20 @@ export default function PlanningPage() {
           ))}
         </div>,
         document.body
-      )}
+        )}
+      </div>
+
+      {/* Modale confirmation suppression */}
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        title="Supprimer ce rendez-vous ?"
+        message={confirmDelete ? `Vous allez supprimer le RDV de ${getRdvLabel(confirmDelete)} le ${confirmDelete.date} à ${confirmDelete.heure_debut}. Cette action est irréversible.` : ''}
+        confirmLabel="Supprimer"
+        requireCheck={false}
+        danger={true}
+        onConfirm={doSupprimer}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </AppShell>
   );
 }

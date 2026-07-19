@@ -27,7 +27,7 @@ serve(async (req) => {
     const html = isReset ? `
 <div style="font-family:'Inter',Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;">
   <div style="background:linear-gradient(135deg,#2563EB,#1D4ED8);padding:32px;text-align:center;border-radius:16px 16px 0 0;">
-    <span style="color:#ffffff;font-size:22px;font-weight:800;">📍 Itilib</span>
+    <img src="https://www.itilib.fr/icons/logo.png" alt="Itilib" width="48" height="48" style="border-radius:12px;display:block;margin:0 auto 10px;"/><span style="color:#ffffff;font-size:22px;font-weight:800;">Itilib</span>
     <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:8px 0 0;">L'outil indispensable des pros itinérants</p>
   </div>
   <div style="padding:40px 32px;border:1px solid #E2E8F0;border-top:none;">
@@ -49,7 +49,7 @@ serve(async (req) => {
 </div>` : `
 <div style="font-family:'Inter',Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;">
   <div style="background:linear-gradient(135deg,#2563EB,#1D4ED8);padding:32px;text-align:center;border-radius:16px 16px 0 0;">
-    <span style="color:#ffffff;font-size:22px;font-weight:800;">📍 Itilib</span>
+    <img src="https://www.itilib.fr/icons/logo.png" alt="Itilib" width="48" height="48" style="border-radius:12px;display:block;margin:0 auto 10px;"/><span style="color:#ffffff;font-size:22px;font-weight:800;">Itilib</span>
     <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:8px 0 0;">L'outil indispensable des pros itinérants</p>
   </div>
   <div style="padding:40px 32px;border:1px solid #E2E8F0;border-top:none;">

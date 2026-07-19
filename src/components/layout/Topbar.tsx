@@ -2,6 +2,8 @@
 import { useAppStore, describeAction } from '@/lib/stores/appStore';
 import { Menu, Undo2, Redo2 } from 'lucide-react';
 import StickyNoteButton from '@/components/ui/StickyNote';
+import SaveIndicator from '@/components/ui/SaveIndicator';
+import WhatsNew from '@/components/ui/WhatsNew';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -69,6 +71,8 @@ export default function Topbar({ title, subtitle, actions }: Props) {
             <span className="hidden sm:inline" style={{ fontSize: '12px' }}>Rétablir</span>
           </button>
         )}
+        <SaveIndicator />
+        <WhatsNew />
         <StickyNoteButton />
         {actions}
       </div>

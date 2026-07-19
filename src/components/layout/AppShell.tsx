@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useAppStore } from '@/lib/stores/appStore';
 import Sidebar from './Sidebar';
 import SubscriptionBanner from '@/components/ui/SubscriptionBanner';
+import OfflineBanner from '@/components/ui/OfflineBanner';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes

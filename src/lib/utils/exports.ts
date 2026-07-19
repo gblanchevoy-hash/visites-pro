@@ -1,4 +1,4 @@
-import { RendezVous, Patient, FraisKilometriques, StatsMensuelles } from '@/types';
+import { RendezVous, Patient, StatsMensuelles } from '@/types';
 import { formatDate, formatDateLong } from './dates';
 
 // ==================== PDF ====================

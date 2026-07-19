@@ -16,7 +16,8 @@ function LegalContent() {
         .wrap{max-width:760px;margin:0 auto;padding:40px 24px 80px;}
         .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;background:#fff;border-bottom:1px solid #e2e8f0;margin-bottom:0;}
         .logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
-        .logo-ic{width:34px;height:34px;border-radius:10px;background:#2563eb;display:flex;align-items:center;justify-content:center;}
+        .logo-ic{width:34px;height:34px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+        .logo-ic img{width:100%;height:100%;object-fit:cover;}
         .logo-n{font-size:16px;font-weight:800;color:#0f172a;}
         .back{font-size:13px;color:#2563eb;text-decoration:none;font-weight:500;}
         .back:hover{opacity:.75;}
@@ -46,9 +47,7 @@ function LegalContent() {
       <nav className="nav">
         <Link href="/auth" className="logo">
           <div className="logo-ic">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="white"/>
-            </svg>
+            <img src="/icons/logo.png" alt="Itilib" />
           </div>
           <span className="logo-n">Itilib</span>
         </Link>

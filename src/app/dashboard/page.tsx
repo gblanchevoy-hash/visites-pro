@@ -239,8 +239,17 @@ export default function DashboardPage() {
 
             {/* List */}
             {loading ? (
-              <div style={{ padding:'40px', display:'flex', justifyContent:'center' }}>
-                <div style={{ width:'24px', height:'24px', borderRadius:'50%', border:'2px solid #DBEAFE', borderTop:'2px solid #2563EB', animation:'spin 0.8s linear infinite' }} />
+              <div style={{ padding:'16px' }}>
+                {[1,2,3].map(i => (
+                  <div key={i} style={{ display:'flex', gap:'12px', alignItems:'center', marginBottom:'12px', padding:'12px', background:'#F8FAFC', borderRadius:'12px' }}>
+                    <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite', flexShrink:0 }} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ height:'13px', width:'50%', background:'linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite', borderRadius:'6px', marginBottom:'6px' }} />
+                      <div style={{ height:'11px', width:'70%', background:'linear-gradient(90deg,#F1F5F9 25%,#E2E8F0 50%,#F1F5F9 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite', borderRadius:'6px' }} />
+                    </div>
+                  </div>
+                ))}
+                <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
               </div>
             ) : todayRdvs.length === 0 ? (
               <div style={{ padding:'48px 24px', textAlign:'center' }}>
