@@ -69,7 +69,7 @@ export default function PricingPage() {
       {/* Header */}
       <div style={{ textAlign:'center', padding:'64px 24px 48px' }}>
 
-        <img src="/icons/logo.png" alt="Itilib" style={{ width:'96px', height:'96px', borderRadius:'22px', boxShadow:'0 12px 32px rgba(37,99,235,.30)', margin:'0 auto 28px' }} />
+        <img src="/icons/logo-large.png" alt="Itilib" style={{ width:'140px', height:'140px', borderRadius:'32px', boxShadow:'0 16px 40px rgba(37,99,235,.35)', margin:'0 auto 32px' }} />
 
         <h1 style={{ fontSize:'48px', fontWeight:900, color:'#0F172A', letterSpacing:'-1.5px', marginBottom:'16px' }}>
           Tarifs simples et transparents
