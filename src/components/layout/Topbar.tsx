@@ -42,7 +42,7 @@ export default function Topbar({ title, subtitle, actions }: Props) {
       borderBottom: '1px solid #f1f5f9',
       gap: '8px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flexShrink: 0 }}>
         {/* Menu burger mobile */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -50,13 +50,13 @@ export default function Topbar({ title, subtitle, actions }: Props) {
           style={{ padding: '8px', borderRadius: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', flexShrink: 0 }}>
           <Menu style={{ width: '20px', height: '20px' }} />
         </button>
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, maxWidth: '38vw' }}>
           <h1 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
           {subtitle && <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</p>}
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflowX: 'auto' }}>
         {lastAction && (
           <button onClick={handleUndo} title={`Annuler : ${describeAction(lastAction)}`}
             style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>

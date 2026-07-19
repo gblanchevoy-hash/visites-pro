@@ -98,6 +98,7 @@ export default function PlanningPage() {
   const { segmentCache, setSegmentCache } = useAppStore();
   const computingRef = useRef(false);
   const ghostRef     = useRef<HTMLDivElement | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -110,6 +111,24 @@ export default function PlanningPage() {
     if (view === 'jour')     setCurrentDate(d => addDays(d, dir));
     else if (view === 'semaine') setCurrentDate(d => addDays(d, dir * 7));
     else setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + dir, 1));
+  };
+
+  // Swipe tactile (mobile) : navigue entre jours/semaines en glissant horizontalement
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    // Seuil : mouvement horizontal net et dominant sur le vertical (pour ne pas gêner le scroll)
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      navigate(dx < 0 ? 1 : -1);
+    }
   };
 
   const rdvsForDate = useCallback((date: Date) =>
@@ -819,7 +838,7 @@ export default function PlanningPage() {
   return (
     <AppShell>
       <Topbar title="Planning" subtitle={subtitle} actions={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
           {/* View switcher */}
           <div className="flex items-center bg-slate-100 p-1 rounded-2xl gap-0.5">
             {(['jour','semaine','mois'] as ViewMode[]).map(v => (
@@ -857,7 +876,8 @@ export default function PlanningPage() {
       {/* Calendar content + bottom bar in a proper flex column */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Scrollable calendar area */}
-        <div className="flex-1 min-h-0" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-1 min-h-0" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {view === 'jour'    && <DayView />}
           {view === 'semaine' && <WeekView />}
           {view === 'mois'    && <MonthView />}

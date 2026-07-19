@@ -356,6 +356,38 @@ function AuthInner() {
           .ft{padding:0 20px 20px;flex-direction:column;gap:8px;text-align:center;}
         }
 
+        /* ── Paysage (tablette ou téléphone tourné à l'horizontale, largeur ≥600px) ──
+           On ré-active la mise en page 2 colonnes même sous 1024px, tant que l'orientation
+           est landscape : sinon la mise en page verticale "portrait" reste appliquée à tort. */
+        @media(max-width:1023px) and (orientation:landscape) and (min-width:600px){
+          html,body{overflow-y:auto !important;height:auto;}
+          .p{height:auto;min-height:100vh;overflow-y:auto;}
+          .main{
+            grid-template-columns:56% 44%;
+            padding:16px 32px;
+            gap:20px;
+            align-items:center;
+          }
+          .cr{order:0;}
+          .cl{order:0;}
+          .route-svg,.route-glow,.h1,.h2,.h3,.h4{display:block;}
+          .logo-bar{padding:12px 24px 0;}
+          .hl{font-size:26px;line-height:32px;letter-spacing:-1px;margin-bottom:10px;}
+          .desc{font-size:13px;margin-bottom:16px;max-width:100%;}
+          .badge{display:flex;margin-bottom:14px;}
+          .cards{display:flex;gap:8px;}
+          .card{padding:12px 10px;}
+          .ct{font-size:12px;}
+          .cd{font-size:11px;}
+          .fc{width:100%;max-width:380px;padding:24px 22px;border-radius:20px;}
+          .fh{font-size:22px;margin-bottom:4px;}
+          .fs{font-size:12px;margin-bottom:14px;}
+          .fi{height:46px;font-size:14px;border-radius:12px;}
+          .btn{height:46px;border-radius:12px;font-size:14px;margin-top:4px;}
+          .field{margin-bottom:8px;}
+          .ft{padding:0 24px 16px;}
+        }
+
         /* ── Mobile (≤480px) ── */
         @media(max-width:480px){
           .main{padding:16px 16px 32px;}

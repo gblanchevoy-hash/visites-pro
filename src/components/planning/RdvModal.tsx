@@ -103,94 +103,111 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
     if (!user) return;
     if (mode === 'patient' && !form.patient_id) { toast.error('Sélectionnez un patient'); return; }
     if (mode === 'occasionnel' && !occasionnel.nom.trim()) { toast.error('Renseignez au moins un nom'); return; }
+    if (loading) return; // évite un double-submit (double-clic / touche Entrée + clic)
 
     setLoading(true);
     let payload: Record<string, unknown> = { ...form, user_id: user.id };
+    let recurrenceCreated = false;
 
-    if (mode === 'occasionnel') {
-      const header = `[Occasionnel] ${occasionnel.nom}${occasionnel.adresse ? ' · ' + occasionnel.adresse : ''}${occasionnel.telephone ? ' · ' + occasionnel.telephone : ''}`;
-      const fullNotes = form.notes.trim() ? `${header}\n${form.notes}` : header;
-      // Géolocaliser l'adresse si pas encore fait
-      let coords = occCoords;
-      if (!coords && occasionnel.adresse.trim()) {
-        try {
-          const geo = await geocodeFullAdresse(occasionnel.adresse);
-          if (geo) { coords = { lat: geo.lat, lng: geo.lng }; setOccCoords(coords); }
-        } catch { /* ignore */ }
-      }
-      // ← Inclure lat/lng dans le payload
-      payload = {
-        ...payload,
-        patient_id: null,
-        notes: fullNotes,
-        lat: coords?.lat ?? null,
-        lng: coords?.lng ?? null,
-      };
-    }
-
-    if (rdv) {
-      const { data, error } = await supabase.from('rendez_vous').update(payload).eq('id', rdv.id).select('*, patient:patients(*)').single();
-      if (error) { toast.error('Erreur mise à jour'); setLoading(false); return; }
-      updateRendezVous(data as unknown as RendezVous);
-      pushHistory({ type: 'UPDATE_RDV', before: rdv!, after: data as unknown as RendezVous });
-      toast.success('Rendez-vous mis à jour');
-    } else {
-      // Créer les occurrences récurrentes si besoin
-      if (recurrence.type !== 'none' && recurrence.end) {
-        const recurrenceId = crypto.randomUUID();
-        const occurrences: Record<string, unknown>[] = [];
-        const startDate = new Date(form.date);
-        const endDate = new Date(recurrence.end);
-        let current = new Date(startDate);
-        let count = 0;
-        const MAX_OCCURRENCES = 365;
-
-        while (current <= endDate && count < MAX_OCCURRENCES) {
-          const dateStr = current.toISOString().split('T')[0];
-          const shouldAdd = recurrence.type === 'daily' ? true
-            : recurrence.type === 'weekly' ? current.getDay() === startDate.getDay()
-            : recurrence.type === 'biweekly' ? (current.getDay() === startDate.getDay() && Math.floor((current.getTime() - startDate.getTime()) / (7 * 24 * 3600 * 1000)) % 2 === 0)
-            : recurrence.type === 'monthly' ? current.getDate() === startDate.getDate()
-            : recurrence.type === 'custom' ? recurrence.days.includes(current.getDay())
-            : false;
-
-          if (shouldAdd && dateStr !== form.date) {
-            occurrences.push({
-              ...payload,
-              date: dateStr,
-              recurrence_type: recurrence.type,
-              recurrence_days: recurrence.days.length ? recurrence.days : null,
-              recurrence_end: recurrence.end,
-              recurrence_id: recurrenceId,
-            });
-          }
-          count++;
-          current.setDate(current.getDate() + 1);
+    try {
+      if (mode === 'occasionnel') {
+        const header = `[Occasionnel] ${occasionnel.nom}${occasionnel.adresse ? ' · ' + occasionnel.adresse : ''}${occasionnel.telephone ? ' · ' + occasionnel.telephone : ''}`;
+        const fullNotes = form.notes.trim() ? `${header}\n${form.notes}` : header;
+        // Géolocaliser l'adresse si pas encore fait
+        let coords = occCoords;
+        if (!coords && occasionnel.adresse.trim()) {
+          try {
+            const geo = await geocodeFullAdresse(occasionnel.adresse);
+            if (geo) { coords = { lat: geo.lat, lng: geo.lng }; setOccCoords(coords); }
+          } catch { /* ignore */ }
         }
-
-        if (occurrences.length > 0) {
-          const { data: newOccurrences } = await supabase
-            .from('rendez_vous')
-            .insert(occurrences)
-            .select('*, patient:patients(*)');
-          // Ajouter immédiatement au store sans attendre le rechargement
-          if (newOccurrences) {
-            const store = (await import('@/lib/stores/appStore')).useAppStore.getState();
-            newOccurrences.forEach((rdv: unknown) => store.addRendezVous(rdv as import('@/types').RendezVous));
-          }
-        }
-        payload = { ...payload, recurrence_type: recurrence.type, recurrence_days: recurrence.days.length ? recurrence.days : null, recurrence_end: recurrence.end, recurrence_id: recurrenceId };
+        // ← Inclure lat/lng dans le payload
+        payload = {
+          ...payload,
+          patient_id: null,
+          notes: fullNotes,
+          lat: coords?.lat ?? null,
+          lng: coords?.lng ?? null,
+        };
       }
 
-      const { data, error } = await supabase.from('rendez_vous').insert(payload).select('*, patient:patients(*)').single();
-      if (error) { toast.error('Erreur création'); setLoading(false); return; }
-      const created = data as unknown as RendezVous;
-      addRendezVous(created);
-      pushHistory({ type: 'ADD_RDV', rdv: created });
-      toast.success('Rendez-vous créé');
+      if (rdv) {
+        const { data, error } = await supabase.from('rendez_vous').update(payload).eq('id', rdv.id).select('*, patient:patients(*)').single();
+        if (error) { toast.error('Erreur mise à jour'); return; }
+        updateRendezVous(data as unknown as RendezVous);
+        pushHistory({ type: 'UPDATE_RDV', before: rdv!, after: data as unknown as RendezVous });
+        toast.success('Rendez-vous mis à jour');
+      } else {
+        // Créer les occurrences récurrentes si besoin
+        if (recurrence.type !== 'none' && recurrence.end) {
+          const recurrenceId = crypto.randomUUID();
+          const occurrences: Record<string, unknown>[] = [];
+          const startDate = new Date(form.date);
+          const endDate = new Date(recurrence.end);
+          let current = new Date(startDate);
+          let count = 0;
+          const MAX_OCCURRENCES = 365;
+
+          while (current <= endDate && count < MAX_OCCURRENCES) {
+            const dateStr = current.toISOString().split('T')[0];
+            const shouldAdd = recurrence.type === 'daily' ? true
+              : recurrence.type === 'weekly' ? current.getDay() === startDate.getDay()
+              : recurrence.type === 'biweekly' ? (current.getDay() === startDate.getDay() && Math.floor((current.getTime() - startDate.getTime()) / (7 * 24 * 3600 * 1000)) % 2 === 0)
+              : recurrence.type === 'monthly' ? current.getDate() === startDate.getDate()
+              : recurrence.type === 'custom' ? recurrence.days.includes(current.getDay())
+              : false;
+
+            if (shouldAdd && dateStr !== form.date) {
+              occurrences.push({
+                ...payload,
+                date: dateStr,
+                recurrence_type: recurrence.type,
+                recurrence_days: recurrence.days.length ? recurrence.days : null,
+                recurrence_end: recurrence.end,
+                recurrence_id: recurrenceId,
+              });
+            }
+            count++;
+            current.setDate(current.getDate() + 1);
+          }
+
+          if (occurrences.length > 0) {
+            try {
+              const { data: newOccurrences, error: occError } = await supabase
+                .from('rendez_vous')
+                .insert(occurrences)
+                .select('*, patient:patients(*)');
+              if (occError) {
+                toast.error('RDV créé, mais erreur sur les occurrences récurrentes');
+              } else if (newOccurrences) {
+                // Ajouter immédiatement au store sans attendre le rechargement
+                const store = (await import('@/lib/stores/appStore')).useAppStore.getState();
+                newOccurrences.forEach((rdv: unknown) => store.addRendezVous(rdv as import('@/types').RendezVous));
+                recurrenceCreated = true;
+              }
+            } catch {
+              toast.error('RDV créé, mais erreur sur les occurrences récurrentes');
+            }
+          }
+          payload = { ...payload, recurrence_type: recurrence.type, recurrence_days: recurrence.days.length ? recurrence.days : null, recurrence_end: recurrence.end, recurrence_id: recurrenceId };
+        }
+
+        const { data, error } = await supabase.from('rendez_vous').insert(payload).select('*, patient:patients(*)').single();
+        if (error) { toast.error('Erreur création'); return; }
+        const created = data as unknown as RendezVous;
+        addRendezVous(created);
+        pushHistory({ type: 'ADD_RDV', rdv: created });
+        toast.success('Rendez-vous créé');
+      }
+      // Succès : on ferme la modale (et on force le rechargement si une série récurrente a été créée)
+      onClose(recurrenceCreated);
+    } catch (err) {
+      console.error(err);
+      toast.error('Une erreur inattendue est survenue');
+      // On ne ferme pas la modale ici : l'utilisateur garde ses données saisies et peut réessayer
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    onClose();
   };
 
   const handleDelete = async () => {
