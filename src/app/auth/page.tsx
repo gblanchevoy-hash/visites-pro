@@ -356,9 +356,7 @@ function AuthInner() {
           .ft{padding:0 20px 20px;flex-direction:column;gap:8px;text-align:center;}
         }
 
-        /* ── Paysage (tablette ou téléphone tourné à l'horizontale, largeur ≥600px) ──
-           On ré-active la mise en page 2 colonnes même sous 1024px, tant que l'orientation
-           est landscape : sinon la mise en page verticale "portrait" reste appliquée à tort. */
+        /* ── Paysage (tablette ou téléphone tourné à l'horizontale, largeur ≥600px) ── */
         @media(max-width:1023px) and (orientation:landscape) and (min-width:600px){
           html,body{overflow-y:auto !important;height:auto;}
           .p{height:auto;min-height:100vh;overflow-y:auto;}

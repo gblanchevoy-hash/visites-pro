@@ -125,7 +125,6 @@ export default function PlanningPage() {
     const t = e.changedTouches[0];
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
-    // Seuil : mouvement horizontal net et dominant sur le vertical (pour ne pas gêner le scroll)
     if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
       navigate(dx < 0 ? 1 : -1);
     }

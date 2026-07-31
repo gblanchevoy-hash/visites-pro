@@ -161,6 +161,34 @@ async function applyAction(action: HistoryAction, direction: 'undo' | 'redo', se
   }
 }
 
+// Stockage local "increvable" : si le quota localStorage est dépassé (QuotaExceededError),
+// on ne doit JAMAIS laisser l'erreur remonter et interrompre le code appelant (ex: la création
+// d'un rendez-vous), sous peine de bugs difficiles à diagnostiquer comme une modale qui ne se
+// ferme pas alors que l'action a bien réussi côté serveur.
+const safeLocalStorage = {
+  getItem: (name: string): string | null => {
+    try { return localStorage.getItem(name); } catch { return null; }
+  },
+  setItem: (name: string, value: string): void => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      // Quota dépassé (ou stockage indisponible, ex: navigation privée) : on tente de
+      // repartir sur une base vide pour cette clé, puis on abandonne silencieusement si
+      // ça échoue encore. Les données restent de toute façon synchronisées côté serveur.
+      try {
+        localStorage.removeItem(name);
+        localStorage.setItem(name, value);
+      } catch {
+        console.warn('[visites-store] Cache local indisponible (quota dépassé) — les données restent à jour côté serveur.');
+      }
+    }
+  },
+  removeItem: (name: string): void => {
+    try { localStorage.removeItem(name); } catch { /* ignore */ }
+  },
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -188,14 +216,14 @@ export const useAppStore = create<AppState>()(
       cachedOrsKey: '',
       setCachedOrsKey: (cachedOrsKey) => set({ cachedOrsKey }),
 
-      // Shared travel segment cache (limité à 500 entrées max)
+      // Shared travel segment cache (limité à 200 entrées max)
       segmentCache: {},
       setSegmentCache: (key, value) => set(state => {
         const current = state.segmentCache;
         const keys = Object.keys(current);
-        // Si > 500 entrées, supprimer les 100 plus anciennes (FIFO approximatif)
-        if (keys.length >= 500) {
-          const toDelete = keys.slice(0, 100);
+        // Si > 200 entrées, supprimer les 50 plus anciennes (FIFO approximatif)
+        if (keys.length >= 200) {
+          const toDelete = keys.slice(0, 50);
           const pruned: typeof current = { ...current };
           toDelete.forEach(k => delete pruned[k]);
           return { segmentCache: { ...pruned, [key]: value } };
@@ -285,16 +313,29 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'visites-store',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        patients: state.patients,
-        rendezVous: state.rendezVous,
-        settings: state.settings,
-        past: state.past,
-        future: state.future,
-        cachedOrsKey: state.cachedOrsKey,
-        segmentCache: state.segmentCache,
-      }),
+      storage: createJSONStorage(() => safeLocalStorage),
+      partialize: (state) => {
+        // On ne persiste qu'une fenêtre raisonnable de rendez-vous en local (±200 jours).
+        // Sans ça, une grosse série récurrente (jusqu'à 365 occurrences d'un coup) peut
+        // faire gonfler le stockage local jusqu'à dépasser le quota du navigateur.
+        // Les données complètes restent de toute façon rechargées depuis le serveur
+        // (loadRendezVous) à chaque session.
+        const WINDOW_MS = 1000 * 60 * 60 * 24 * 200;
+        const now = Date.now();
+        const rendezVousAllege = state.rendezVous.filter((r) => {
+          const t = new Date(r.date).getTime();
+          return Number.isFinite(t) ? Math.abs(t - now) <= WINDOW_MS : true;
+        });
+        return {
+          patients: state.patients,
+          rendezVous: rendezVousAllege,
+          settings: state.settings,
+          past: state.past,
+          future: state.future,
+          cachedOrsKey: state.cachedOrsKey,
+          segmentCache: state.segmentCache,
+        };
+      },
     }
   )
 );

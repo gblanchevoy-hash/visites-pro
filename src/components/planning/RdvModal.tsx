@@ -113,7 +113,6 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
       if (mode === 'occasionnel') {
         const header = `[Occasionnel] ${occasionnel.nom}${occasionnel.adresse ? ' · ' + occasionnel.adresse : ''}${occasionnel.telephone ? ' · ' + occasionnel.telephone : ''}`;
         const fullNotes = form.notes.trim() ? `${header}\n${form.notes}` : header;
-        // Géolocaliser l'adresse si pas encore fait
         let coords = occCoords;
         if (!coords && occasionnel.adresse.trim()) {
           try {
@@ -121,7 +120,6 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
             if (geo) { coords = { lat: geo.lat, lng: geo.lng }; setOccCoords(coords); }
           } catch { /* ignore */ }
         }
-        // ← Inclure lat/lng dans le payload
         payload = {
           ...payload,
           patient_id: null,
@@ -138,7 +136,6 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
         pushHistory({ type: 'UPDATE_RDV', before: rdv!, after: data as unknown as RendezVous });
         toast.success('Rendez-vous mis à jour');
       } else {
-        // Créer les occurrences récurrentes si besoin
         if (recurrence.type !== 'none' && recurrence.end) {
           const recurrenceId = crypto.randomUUID();
           const occurrences: Record<string, unknown>[] = [];
@@ -180,7 +177,6 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
               if (occError) {
                 toast.error('RDV créé, mais erreur sur les occurrences récurrentes');
               } else if (newOccurrences) {
-                // Ajouter immédiatement au store sans attendre le rechargement
                 const store = (await import('@/lib/stores/appStore')).useAppStore.getState();
                 newOccurrences.forEach((rdv: unknown) => store.addRendezVous(rdv as import('@/types').RendezVous));
                 recurrenceCreated = true;
@@ -199,12 +195,10 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
         pushHistory({ type: 'ADD_RDV', rdv: created });
         toast.success('Rendez-vous créé');
       }
-      // Succès : on ferme la modale (et on force le rechargement si une série récurrente a été créée)
       onClose(recurrenceCreated);
     } catch (err) {
       console.error(err);
       toast.error('Une erreur inattendue est survenue');
-      // On ne ferme pas la modale ici : l'utilisateur garde ses données saisies et peut réessayer
     } finally {
       setLoading(false);
     }
