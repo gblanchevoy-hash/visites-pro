@@ -1,0 +1,80 @@
+
+/* ═══════════════════════════════════════
+   RESPONSIVE MOBILE / TABLETTE
+═══════════════════════════════════════ */
+
+/* Pages content areas */
+@media (max-width: 768px) {
+  /* Main layout */
+  main {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* All pages: reduce padding on mobile */
+  .flex-1[style*="padding:\"32px\""],
+  .flex-1[style*="padding: 32px"] {
+    padding: 16px !important;
+  }
+
+  /* Cards stack on mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables scroll horizontally */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Forms: full width */
+  .input, input, select, textarea {
+    font-size: 16px !important; /* Prevent iOS zoom */
+  }
+
+  /* Modals: full screen on mobile */
+  [role="dialog"] {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+  }
+}
+
+/* Sidebar overlay on mobile */
+@media (max-width: 1023px) {
+  /* Sidebar is fixed overlay, main takes full width */
+  main.flex-1 {
+    margin-left: 0 !important;
+  }
+}
+
+/* Planning calendar: scroll on mobile */
+@media (max-width: 768px) {
+  .planning-grid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch targets: minimum 44px */
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception: small inline buttons */
+  .btn-inline {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+/* PWA safe areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .footer-safe {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}

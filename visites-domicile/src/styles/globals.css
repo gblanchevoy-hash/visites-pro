@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-width: 260px;
+    --road-color: #2563eb;
+    --road-accent: #e19020;
+    --road-green: #16a34a;
+  }
+
+  * { @apply border-slate-200; }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-300; }
+}
+
+@layer components {
+
+  /* ── Cards ── */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-card transition-all duration-200;
+  }
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:border-primary-100 hover:-translate-y-0.5;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5
+           bg-gradient-to-r from-primary-600 to-primary-500
+           hover:from-primary-700 hover:to-primary-600
+           text-white text-sm font-semibold rounded-xl
+           transition-all duration-200 shadow-sm hover:shadow-glow-blue
+           focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+  .btn-road {
+    @apply inline-flex items-center gap-2 px-4 py-2.5
+           bg-gradient-to-r from-road-500 to-road-400
+           hover:from-road-600 hover:to-road-500
+           text-white text-sm font-semibold rounded-xl
+           transition-all duration-200 shadow-sm hover:shadow-glow-road
+           focus:outline-none focus:ring-2 focus:ring-road-400 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5
+           bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-xl
+           border border-slate-200 hover:border-slate-300
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2
+           disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2.5
+           bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-2
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900
+           text-sm font-medium rounded-xl transition-all duration-150;
+  }
+
+  /* ── Inputs ── */
+  .input {
+    @apply w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl bg-white
+           placeholder:text-slate-400
+           focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent
+           transition-all duration-150;
+  }
+  .input:focus { box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15); }
+
+  .label { @apply block text-sm font-medium text-slate-700 mb-1.5; }
+
+  /* ── Badges ── */
+  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
+  .badge-blue { @apply badge bg-primary-100 text-primary-700; }
+  .badge-green { @apply badge bg-forest-100 text-forest-700; }
+  .badge-amber { @apply badge bg-road-100 text-road-700; }
+  .badge-red { @apply badge bg-red-100 text-red-700; }
+  .badge-slate { @apply badge bg-slate-100 text-slate-600; }
+
+  /* ── Stat cards ── */
+  .stat-card { @apply card p-5 flex flex-col gap-2; }
+
+  /* ── Road decorative line ── */
+  .road-line {
+    position: relative;
+  }
+  .road-line::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    width: 3px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #2563eb 0px, #2563eb 12px,
+      transparent 12px, transparent 24px
+    );
+    opacity: 0.15;
+    transform: translateX(-50%);
+  }
+
+  /* ── Gradient hero header ── */
+  .page-header {
+    @apply relative overflow-hidden;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%);
+  }
+
+  /* ── Map container ── */
+  .leaflet-container {
+    @apply rounded-2xl;
+    font-family: inherit !important;
+  }
+  .leaflet-popup-content-wrapper {
+    @apply rounded-xl shadow-xl border border-slate-100;
+  }
+  .leaflet-popup-tip { background: white; }
+
+  /* ── Calendar chip ── */
+  .rdv-chip {
+    @apply px-2 py-0.5 rounded-lg text-xs font-semibold truncate cursor-pointer
+           transition-all duration-150 hover:opacity-80 hover:scale-[1.02];
+  }
+
+  /* ── Sidebar nav active glow ── */
+  .nav-active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 4px 12px rgb(37 99 235 / 0.4);
+  }
+
+  /* ── Animated road dots ── */
+  .road-dots {
+    background-image: radial-gradient(circle, #2563eb 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.06;
+  }
+
+  /* ── Progress pin ── */
+  .pin {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  }
+  .pin-road {
+    background: linear-gradient(135deg, #e19020, #c97014);
+  }
+  .pin-green {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+  }
+
+  /* ── Security badge ── */
+  .security-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
+           bg-forest-50 text-forest-700 border border-forest-200;
+  }
+
+  /* ── Glassmorphism card ── */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    @apply rounded-2xl border border-white/50 shadow-card;
+  }
+}
+
+/* ── Topbar gradient ── */
+.topbar-gradient {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+}
+
+/* ── Sidebar dark ── */
+.sidebar-bg {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* ── PWA safe area ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* ── Print ── */
+@media print {
+  .no-print { display: none !important; }
+  .card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+}
+
+/* ── Custom SVG road animation ── */
+@keyframes roadDash {
+  to { stroke-dashoffset: 0; }
+}
+.road-svg-line {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: roadDash 1.5s ease-out forwards;
+}
