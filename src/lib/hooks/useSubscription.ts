@@ -35,9 +35,10 @@ export function useSubscription() {
       .then(({ data }) => {
         if (!data) {
           // Pas encore d'abonnement — créer un essai gratuit de 30 jours
+          const dateDebut = new Date().toISOString();
           const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           supabase.from('subscriptions').insert({
-            user_id: user.id, plan: 'solo', statut: 'actif', date_fin: dateFin,
+            user_id: user.id, plan: 'solo', statut: 'actif', date_debut: dateDebut, date_fin: dateFin,
           }).then(({ data: newSub, error: insertError }) => {
             if (insertError) {
               // On log discrètement sans bloquer l'utilisateur : l'app continue de
