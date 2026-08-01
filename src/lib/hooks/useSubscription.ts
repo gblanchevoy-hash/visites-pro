@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAppStore } from '@/lib/stores/appStore';
 
@@ -17,9 +17,16 @@ export function useSubscription() {
   const { user } = useAppStore();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  // Garde-fou : évite de retenter l'appel (et surtout l'INSERT) à chaque re-rendu.
+  // Sans ça, un simple rafraîchissement de session (fréquent, y compris juste en
+  // revenant sur l'onglet) recréait un nouvel objet `user` et relançait la requête
+  // en boucle, saturant la connexion et perturbant les autres appels (rendez-vous...).
+  const attemptedForUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
+    if (attemptedForUserId.current === user.id) return; // déjà tenté pour cet utilisateur
+    attemptedForUserId.current = user.id;
 
     supabase.from('subscriptions')
       .select('*')
@@ -31,7 +38,12 @@ export function useSubscription() {
           const dateFin = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           supabase.from('subscriptions').insert({
             user_id: user.id, plan: 'solo', statut: 'actif', date_fin: dateFin,
-          }).then(({ data: newSub }) => {
+          }).then(({ data: newSub, error: insertError }) => {
+            if (insertError) {
+              // On log discrètement sans bloquer l'utilisateur : l'app continue de
+              // fonctionner avec l'essai gratuit calculé localement ci-dessous.
+              console.warn('[useSubscription] Création abonnement essai impossible :', insertError.message);
+            }
             if (newSub) setSub(buildSub(newSub));
           });
           setSub({

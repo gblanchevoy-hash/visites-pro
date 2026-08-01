@@ -218,7 +218,14 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       user: null,
-      setUser: (user) => set({ user }),
+      setUser: (user) => set((s) => {
+        // Évite de déclencher les useEffect dépendant de `user` (ex: useSubscription)
+        // à chaque rafraîchissement de session si l'id/email n'ont pas réellement changé.
+        if (s.user && user && s.user.id === user.id && s.user.email === user.email) {
+          return {};
+        }
+        return { user };
+      }),
 
       patients: [],
       setPatients: (patients) => set({ patients }),
