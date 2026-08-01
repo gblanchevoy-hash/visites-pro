@@ -9,6 +9,8 @@ type HistoryAction =
   | { type: 'ADD_RDV'; rdv: RendezVous }
   | { type: 'UPDATE_RDV'; before: RendezVous; after: RendezVous }
   | { type: 'DELETE_RDV'; rdv: RendezVous }
+  // Suppression de toute une série récurrente en une fois (garde tous les RDV supprimés pour pouvoir annuler)
+  | { type: 'DELETE_SERIE'; rdvs: RendezVous[] }
   | { type: 'ADD_PATIENT'; patient: Patient }
   | { type: 'UPDATE_PATIENT'; before: Patient; after: Patient }
   | { type: 'DELETE_PATIENT'; patient: Patient }
@@ -20,6 +22,7 @@ const ACTION_LABELS: Record<HistoryAction['type'], string> = {
   ADD_RDV: 'Création de rendez-vous',
   UPDATE_RDV: 'Modification de rendez-vous',
   DELETE_RDV: 'Suppression de rendez-vous',
+  DELETE_SERIE: 'Suppression de série récurrente',
   ADD_PATIENT: 'Création de patient',
   UPDATE_PATIENT: 'Modification de patient',
   DELETE_PATIENT: 'Suppression de patient',
@@ -111,6 +114,23 @@ async function applyAction(action: HistoryAction, direction: 'undo' | 'redo', se
       } else {
         await supabase.from('rendez_vous').delete().eq('id', action.rdv.id);
         set((s) => ({ rendezVous: s.rendezVous.filter((r) => r.id !== action.rdv.id) }));
+      }
+      break;
+    }
+    case 'DELETE_SERIE': {
+      if (direction === 'undo') {
+        // Ré-insérer tous les RDV de la série (Supabase génère de nouveaux ids)
+        const toInsert = action.rdvs.map(({ id: _omit, ...rest }) => rest);
+        const { data } = await supabase.from('rendez_vous').insert(toInsert).select('*, patient:patients(*)');
+        if (data) set((s) => ({ rendezVous: [...s.rendezVous, ...(data as unknown as RendezVous[])] }));
+      } else {
+        // Redo : les ids d'origine ne sont plus valides après un undo (nouveaux ids générés),
+        // on retrouve donc la série via recurrence_id, comme lors de la suppression initiale.
+        const recurrenceId = action.rdvs[0]?.recurrence_id;
+        if (recurrenceId) {
+          await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
+          set((s) => ({ rendezVous: s.rendezVous.filter((r) => r.recurrence_id !== recurrenceId) }));
+        }
       }
       break;
     }

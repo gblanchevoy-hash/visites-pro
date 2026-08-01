@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
 import EmptyState from '@/components/ui/EmptyState';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import DeleteRecurrenceModal from '@/components/ui/DeleteRecurrenceModal';
 import { toastWithUndo } from '@/components/ui/UndoToast';
 import { triggerSave } from '@/components/ui/SaveIndicator';
 import Topbar from '@/components/layout/Topbar';
@@ -113,19 +114,29 @@ export default function PlanningPage() {
     else setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + dir, 1));
   };
 
-  // Swipe tactile (mobile) : navigue entre jours/semaines en glissant horizontalement
+  // Swipe tactile (mobile/tablette) : navigue entre jours/semaines en glissant horizontalement.
+  // Seuil volontairement élevé et proportionnel à la largeur d'écran pour éviter les
+  // changements de semaine accidentels sur grand écran (tablette) au moindre effleurement.
+  const touchStartTimeRef = useRef(0);
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     touchStartRef.current = { x: t.clientX, y: t.clientY };
+    touchStartTimeRef.current = Date.now();
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
+    const startTime = touchStartTimeRef.current;
     touchStartRef.current = null;
     if (!start) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
-    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+    const elapsed = Date.now() - startTime;
+    // Distance minimale : au moins 110px, ou 18% de la largeur d'écran sur les grands écrans (tablette)
+    const minDistance = Math.max(110, (typeof window !== 'undefined' ? window.innerWidth : 0) * 0.18);
+    // Le geste doit être clairement horizontal (2x plus horizontal que vertical)
+    // et suffisamment lent/volontaire (pas un simple tapotement rapide < 80ms)
+    if (elapsed >= 80 && Math.abs(dx) > minDistance && Math.abs(dx) > Math.abs(dy) * 2) {
       navigate(dx < 0 ? 1 : -1);
     }
   };
@@ -304,6 +315,21 @@ export default function PlanningPage() {
     pushHistory({ type: 'DELETE_RDV', rdv: confirmDelete });
     triggerSave('saved');
     toast.success('RDV supprimé');
+    setConfirmDelete(null);
+  };
+
+  const doSupprimerSerie = async () => {
+    if (!confirmDelete?.recurrence_id) return;
+    const recurrenceId = confirmDelete.recurrence_id;
+    const store = useAppStore.getState();
+    // Capturer tous les RDV de la série AVANT suppression, pour pouvoir annuler ensuite
+    const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId);
+    const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
+    if (error) { toast.error('Erreur suppression de la série'); return; }
+    rdvsSupprimes.forEach(r => store.removeRendezVous(r.id));
+    if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes });
+    triggerSave('saved');
+    toast.success(`Série récurrente supprimée (${rdvsSupprimes.length} rendez-vous)`);
     setConfirmDelete(null);
   };
 
@@ -998,16 +1024,26 @@ export default function PlanningPage() {
       </div>
 
       {/* Modale confirmation suppression */}
-      <ConfirmModal
-        isOpen={!!confirmDelete}
-        title="Supprimer ce rendez-vous ?"
-        message={confirmDelete ? `Vous allez supprimer le RDV de ${getRdvLabel(confirmDelete)} le ${confirmDelete.date} à ${confirmDelete.heure_debut}. Cette action est irréversible.` : ''}
-        confirmLabel="Supprimer"
-        requireCheck={false}
-        danger={true}
-        onConfirm={doSupprimer}
-        onCancel={() => setConfirmDelete(null)}
-      />
+      {confirmDelete?.recurrence_id ? (
+        <DeleteRecurrenceModal
+          isOpen={!!confirmDelete}
+          label={confirmDelete ? `le RDV de ${getRdvLabel(confirmDelete)} le ${confirmDelete.date} à ${confirmDelete.heure_debut}` : ''}
+          onDeleteOne={doSupprimer}
+          onDeleteAll={doSupprimerSerie}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      ) : (
+        <ConfirmModal
+          isOpen={!!confirmDelete}
+          title="Supprimer ce rendez-vous ?"
+          message={confirmDelete ? `Vous allez supprimer le RDV de ${getRdvLabel(confirmDelete)} le ${confirmDelete.date} à ${confirmDelete.heure_debut}. Cette action est irréversible.` : ''}
+          confirmLabel="Supprimer"
+          requireCheck={false}
+          danger={true}
+          onConfirm={doSupprimer}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </AppShell>
   );
 }

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { X, Trash2, Copy, UserPlus, Users } from 'lucide-react';
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete';
+import DeleteRecurrenceModal from '@/components/ui/DeleteRecurrenceModal';
 import { geocodeFullAdresse } from '@/lib/utils/geo';
 import { addMinutes } from '@/lib/utils/dates';
 
@@ -57,6 +58,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
 
   const [mode, setMode] = useState<Mode>(isExistingOccasionnel ? 'occasionnel' : 'patient');
   const [loading, setLoading] = useState(false);
+  const [showDeleteRecurrence, setShowDeleteRecurrence] = useState(false);
   const [form, setForm] = useState({
     patient_id: rdv?.patient_id ?? '',
     date: rdv?.date ?? defaultDate,
@@ -206,6 +208,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
 
   const handleDelete = async () => {
     if (!rdv) return;
+    if (rdv.recurrence_id) { setShowDeleteRecurrence(true); return; }
     if (!confirm('Supprimer ce rendez-vous ?')) return;
     const { error } = await supabase.from('rendez_vous').delete().eq('id', rdv.id);
     if (error) { toast.error('Erreur suppression'); return; }
@@ -213,6 +216,31 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
     pushHistory({ type: 'DELETE_RDV', rdv });
     toast.success('Rendez-vous supprimé');
     onClose();
+  };
+
+  const handleDeleteOne = async () => {
+    if (!rdv) return;
+    setShowDeleteRecurrence(false);
+    const { error } = await supabase.from('rendez_vous').delete().eq('id', rdv.id);
+    if (error) { toast.error('Erreur suppression'); return; }
+    removeRendezVous(rdv.id);
+    pushHistory({ type: 'DELETE_RDV', rdv });
+    toast.success('Rendez-vous supprimé');
+    onClose();
+  };
+
+  const handleDeleteSerie = async () => {
+    if (!rdv?.recurrence_id) return;
+    setShowDeleteRecurrence(false);
+    const recurrenceId = rdv.recurrence_id;
+    const store = useAppStore.getState();
+    const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId);
+    const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
+    if (error) { toast.error('Erreur suppression de la série'); return; }
+    rdvsSupprimes.forEach(r => store.removeRendezVous(r.id));
+    if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes });
+    toast.success(`Série récurrente supprimée (${rdvsSupprimes.length} rendez-vous)`);
+    onClose(true);
   };
 
   const handleDuplicate = async () => {
@@ -444,6 +472,14 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
           </div>
         </form>
       </div>
+
+      <DeleteRecurrenceModal
+        isOpen={showDeleteRecurrence}
+        label={rdv ? `le RDV du ${rdv.date} à ${rdv.heure_debut}` : ''}
+        onDeleteOne={handleDeleteOne}
+        onDeleteAll={handleDeleteSerie}
+        onCancel={() => setShowDeleteRecurrence(false)}
+      />
     </div>
   );
 }

@@ -1,43 +1,53 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import {
+  X, Sparkles, Map, RefreshCw, AlertTriangle, CloudSun, BarChart3,
+  MapPin, StickyNote, Milestone, Smartphone, Mail, KeyRound, Scale,
+  type LucideIcon,
+} from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-const CHANGELOG = [
+const CHANGELOG: {
+  version: string;
+  date: string;
+  badge: string;
+  badgeColor: string;
+  items: { icon: LucideIcon; text: string }[];
+}[] = [
   {
     version: '1.4',
     date: 'Juillet 2026',
-    badge: '🆕 Nouveau',
+    badge: 'Nouveau',
     badgeColor: '#2563EB',
     items: [
-      { icon: '🗺️', text: 'Itinéraires avec trafic réel (HERE Routing) — les temps de trajet s\'adaptent à l\'heure de départ' },
-      { icon: '🔄', text: 'Récurrence des rendez-vous — quotidien, hebdomadaire, mensuel ou personnalisé' },
-      { icon: '⚠️', text: 'Alertes de chevauchement — détection automatique des conflits d\'horaire' },
-      { icon: '🌤️', text: 'Météo matin et après-midi pour chaque jour des 7 prochains jours' },
-      { icon: '📊', text: 'Synchronisation automatique tournées → frais kilométriques → rapport fiscal' },
+      { icon: Map, text: 'Itinéraires avec trafic réel (HERE Routing) — les temps de trajet s\'adaptent à l\'heure de départ' },
+      { icon: RefreshCw, text: 'Récurrence des rendez-vous — quotidien, hebdomadaire, mensuel ou personnalisé' },
+      { icon: AlertTriangle, text: 'Alertes de chevauchement — détection automatique des conflits d\'horaire' },
+      { icon: CloudSun, text: 'Météo matin et après-midi pour chaque jour des 7 prochains jours' },
+      { icon: BarChart3, text: 'Synchronisation automatique tournées → frais kilométriques → rapport fiscal' },
     ],
   },
   {
     version: '1.3',
     date: 'Juin 2026',
-    badge: '✨ Amélioré',
+    badge: 'Amélioré',
     badgeColor: '#7C3AED',
     items: [
-      { icon: '📍', text: 'Géocodage amélioré avec Photon (bâtiments, résidences, POI)' },
-      { icon: '🗒️', text: 'Pense-bête dans le bandeau — notes colorées accessibles partout' },
-      { icon: '🛣️', text: 'Alerte autoroute sur les segments de tournée' },
-      { icon: '📱', text: 'Application optimisée tablette et mobile' },
+      { icon: MapPin, text: 'Géocodage amélioré avec Photon (bâtiments, résidences, POI)' },
+      { icon: StickyNote, text: 'Pense-bête dans le bandeau — notes colorées accessibles partout' },
+      { icon: Milestone, text: 'Alerte autoroute sur les segments de tournée' },
+      { icon: Smartphone, text: 'Application optimisée tablette et mobile' },
     ],
   },
   {
     version: '1.2',
     date: 'Mai 2026',
-    badge: '🔧 Corrections',
+    badge: 'Corrections',
     badgeColor: '#10B981',
     items: [
-      { icon: '📧', text: 'Email de confirmation brandé Itilib' },
-      { icon: '🔐', text: 'Page de réinitialisation de mot de passe' },
-      { icon: '⚖️', text: 'Pages légales : mentions légales, confidentialité, CGU' },
+      { icon: Mail, text: 'Email de confirmation brandé Itilib' },
+      { icon: KeyRound, text: 'Page de réinitialisation de mot de passe' },
+      { icon: Scale, text: 'Pages légales : mentions légales, confidentialité, CGU' },
     ],
   },
 ];
@@ -102,12 +112,17 @@ export default function WhatsNew() {
                     <span style={{ fontSize:'12px', color:'#94A3B8' }}>· {release.date}</span>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-                    {release.items.map((item, i) => (
-                      <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'10px 14px', background:'#F8FAFC', borderRadius:'10px' }}>
-                        <span style={{ fontSize:'16px', flexShrink:0, lineHeight:1.4 }}>{item.icon}</span>
-                        <span style={{ fontSize:'13px', color:'#374151', lineHeight:1.55 }}>{item.text}</span>
-                      </div>
-                    ))}
+                    {release.items.map((item, i) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'10px 14px', background:'#F8FAFC', borderRadius:'10px' }}>
+                          <div style={{ width:'26px', height:'26px', borderRadius:'7px', background:'#EFF6FF', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:'1px' }}>
+                            <Icon style={{ width:'14px', height:'14px', color:'#2563EB' }} />
+                          </div>
+                          <span style={{ fontSize:'13px', color:'#374151', lineHeight:1.55 }}>{item.text}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

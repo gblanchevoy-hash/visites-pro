@@ -36,6 +36,10 @@ export interface RendezVous {
   couleur?: string | null;
   lat?: number | null;
   lng?: number | null;
+  recurrence_type?: string | null;
+  recurrence_days?: number[] | null;
+  recurrence_end?: string | null;
+  recurrence_id?: string | null;
   created_at: string;
   updated_at: string;
 }
