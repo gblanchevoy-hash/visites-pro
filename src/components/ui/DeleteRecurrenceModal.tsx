@@ -1,16 +1,17 @@
 'use client';
-import { Trash2, CalendarX } from 'lucide-react';
+import { Trash2, CalendarX, CalendarClock } from 'lucide-react';
 
 interface DeleteRecurrenceModalProps {
   isOpen: boolean;
   label: string; // ex: "le RDV de Jean Dupont le 12/08 à 09:00"
   onDeleteOne: () => void;
+  onDeleteFromHere: () => void;
   onDeleteAll: () => void;
   onCancel: () => void;
 }
 
 export default function DeleteRecurrenceModal({
-  isOpen, label, onDeleteOne, onDeleteAll, onCancel,
+  isOpen, label, onDeleteOne, onDeleteFromHere, onDeleteAll, onCancel,
 }: DeleteRecurrenceModalProps) {
   if (!isOpen) return null;
 
@@ -52,6 +53,17 @@ export default function DeleteRecurrenceModal({
             }}>
             <Trash2 style={{ width: '17px', height: '17px', color: '#64748B', flexShrink: 0 }} />
             Seulement cet événement
+          </button>
+
+          <button onClick={onDeleteFromHere}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              height: '50px', padding: '0 16px', borderRadius: '12px',
+              background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412',
+              fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+            }}>
+            <CalendarClock style={{ width: '17px', height: '17px', color: '#EA580C', flexShrink: 0 }} />
+            Cet événement et tous les suivants
           </button>
 
           <button onClick={onDeleteAll}

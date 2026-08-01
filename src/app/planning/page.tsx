@@ -408,6 +408,22 @@ export default function PlanningPage() {
     setConfirmDelete(null);
   };
 
+  const doSupprimerAPartirDIci = async () => {
+    if (!confirmDelete?.recurrence_id) return;
+    const recurrenceId = confirmDelete.recurrence_id;
+    const fromDate = confirmDelete.date;
+    const store = useAppStore.getState();
+    // Seuls les RDV à partir de cette date (incluse) sont concernés — les passés sont conservés
+    const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId && r.date >= fromDate);
+    const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId).gte('date', fromDate);
+    if (error) { toast.error('Erreur suppression de la série'); return; }
+    store.removeRendezVousBatch(rdvsSupprimes.map(r => r.id));
+    if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes, fromDate });
+    triggerSave('saved');
+    toast.success(`Récurrence arrêtée (${rdvsSupprimes.length} rendez-vous futurs supprimés, les passés sont conservés)`);
+    setConfirmDelete(null);
+  };
+
   const handleCtxDupliquer = async (rdv: RendezVous) => {
     setCtxMenu(null);
     // Copie complète de tous les champs — rien ne doit être perdu
@@ -1106,6 +1122,7 @@ export default function PlanningPage() {
           isOpen={!!confirmDelete}
           label={confirmDelete ? `le RDV de ${getRdvLabel(confirmDelete)} le ${confirmDelete.date} à ${confirmDelete.heure_debut}` : ''}
           onDeleteOne={doSupprimer}
+          onDeleteFromHere={doSupprimerAPartirDIci}
           onDeleteAll={doSupprimerSerie}
           onCancel={() => setConfirmDelete(null)}
         />

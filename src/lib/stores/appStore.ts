@@ -10,7 +10,8 @@ type HistoryAction =
   | { type: 'UPDATE_RDV'; before: RendezVous; after: RendezVous }
   | { type: 'DELETE_RDV'; rdv: RendezVous }
   // Suppression de toute une série récurrente en une fois (garde tous les RDV supprimés pour pouvoir annuler)
-  | { type: 'DELETE_SERIE'; rdvs: RendezVous[] }
+  // fromDate absent = toute la série ; fromDate présent = uniquement à partir de cette date (incluse)
+  | { type: 'DELETE_SERIE'; rdvs: RendezVous[]; fromDate?: string }
   | { type: 'ADD_PATIENT'; patient: Patient }
   | { type: 'UPDATE_PATIENT'; before: Patient; after: Patient }
   | { type: 'DELETE_PATIENT'; patient: Patient }
@@ -130,11 +131,20 @@ async function applyAction(action: HistoryAction, direction: 'undo' | 'redo', se
         if (data) set((s) => ({ rendezVous: [...s.rendezVous, ...(data as unknown as RendezVous[])] }));
       } else {
         // Redo : les ids d'origine ne sont plus valides après un undo (nouveaux ids générés),
-        // on retrouve donc la série via recurrence_id, comme lors de la suppression initiale.
+        // on retrouve donc les RDV concernés via recurrence_id (+ date si suppression partielle),
+        // comme lors de la suppression initiale.
         const recurrenceId = action.rdvs[0]?.recurrence_id;
         if (recurrenceId) {
-          await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
-          set((s) => ({ rendezVous: s.rendezVous.filter((r) => r.recurrence_id !== recurrenceId) }));
+          let q = supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
+          if (action.fromDate) q = q.gte('date', action.fromDate);
+          await q;
+          set((s) => ({
+            rendezVous: s.rendezVous.filter((r) => {
+              if (r.recurrence_id !== recurrenceId) return true;
+              if (action.fromDate) return r.date < action.fromDate;
+              return false;
+            }),
+          }));
         }
       }
       break;

@@ -243,6 +243,21 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
     onClose(true);
   };
 
+  const handleDeleteFromHere = async () => {
+    if (!rdv?.recurrence_id) return;
+    setShowDeleteRecurrence(false);
+    const recurrenceId = rdv.recurrence_id;
+    const fromDate = rdv.date;
+    const store = useAppStore.getState();
+    const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId && r.date >= fromDate);
+    const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId).gte('date', fromDate);
+    if (error) { toast.error('Erreur suppression de la série'); return; }
+    store.removeRendezVousBatch(rdvsSupprimes.map(r => r.id));
+    if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes, fromDate });
+    toast.success(`Récurrence arrêtée (${rdvsSupprimes.length} rendez-vous futurs supprimés, les passés sont conservés)`);
+    onClose(true);
+  };
+
   const handleDuplicate = async () => {
     if (!rdv || !user) return;
     const payload = { ...form, user_id: user.id };
@@ -477,6 +492,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
         isOpen={showDeleteRecurrence}
         label={rdv ? `le RDV du ${rdv.date} à ${rdv.heure_debut}` : ''}
         onDeleteOne={handleDeleteOne}
+        onDeleteFromHere={handleDeleteFromHere}
         onDeleteAll={handleDeleteSerie}
         onCancel={() => setShowDeleteRecurrence(false)}
       />
