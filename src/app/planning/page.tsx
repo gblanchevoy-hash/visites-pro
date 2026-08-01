@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
@@ -100,6 +100,10 @@ export default function PlanningPage() {
   const computingRef = useRef(false);
   const ghostRef     = useRef<HTMLDivElement | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStartTimeRef = useRef(0);
+  const viewTrackRef  = useRef<HTMLDivElement | null>(null); // conteneur qu'on translate visuellement pendant le swipe
+  const draggingRef   = useRef(false);       // vrai dès qu'un geste horizontal est confirmé
+  const enterDirRef   = useRef<0 | 1 | -1>(0); // sens d'entrée de la nouvelle vue après un swipe validé
 
   useEffect(() => {
     if (!user) return;
@@ -114,32 +118,103 @@ export default function PlanningPage() {
     else setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + dir, 1));
   };
 
-  // Swipe tactile (mobile/tablette) : navigue entre jours/semaines en glissant horizontalement.
-  // Seuil volontairement élevé et proportionnel à la largeur d'écran pour éviter les
-  // changements de semaine accidentels sur grand écran (tablette) au moindre effleurement.
-  const touchStartTimeRef = useRef(0);
+  // ── Swipe tactile (mobile/tablette) avec suivi visuel en temps réel ──
+  // La vue suit le doigt pendant le glissement (comme un carrousel), puis :
+  //  - si le geste dépasse le seuil : elle termine sa sortie et la vue suivante/précédente
+  //    entre en glissant depuis le bord opposé
+  //  - sinon : elle revient en douceur à sa position d'origine
+  const MIN_SWIPE_DISTANCE = () => Math.max(110, (typeof window !== 'undefined' ? window.innerWidth : 0) * 0.18);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     touchStartRef.current = { x: t.clientX, y: t.clientY };
     touchStartTimeRef.current = Date.now();
+    draggingRef.current = false;
   };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    const el = viewTrackRef.current;
+    if (!start || !el) return;
+    const t = e.touches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+
+    if (!draggingRef.current) {
+      // On détermine l'intention du geste au premier mouvement net
+      if (Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+        draggingRef.current = true;
+      } else if (Math.abs(dy) > 14) {
+        // Geste plutôt vertical (scroll) : on abandonne le suivi horizontal pour ce geste
+        touchStartRef.current = null;
+        return;
+      } else {
+        return;
+      }
+    }
+
+    // Légère résistance au-delà de l'écran pour un rendu plus naturel
+    const maxTravel = (typeof window !== 'undefined' ? window.innerWidth : 400) * 0.9;
+    const clamped = Math.abs(dx) > maxTravel ? Math.sign(dx) * (maxTravel + (Math.abs(dx) - maxTravel) * 0.25) : dx;
+
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${clamped}px)`;
+    el.style.opacity = String(1 - Math.min(Math.abs(clamped) / (maxTravel * 1.4), 0.3));
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
     const startTime = touchStartTimeRef.current;
+    const wasDragging = draggingRef.current;
     touchStartRef.current = null;
-    if (!start) return;
+    draggingRef.current = false;
+    const el = viewTrackRef.current;
+    if (!start || !el) return;
+
     const t = e.changedTouches[0];
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     const elapsed = Date.now() - startTime;
-    // Distance minimale : au moins 110px, ou 18% de la largeur d'écran sur les grands écrans (tablette)
-    const minDistance = Math.max(110, (typeof window !== 'undefined' ? window.innerWidth : 0) * 0.18);
-    // Le geste doit être clairement horizontal (2x plus horizontal que vertical)
-    // et suffisamment lent/volontaire (pas un simple tapotement rapide < 80ms)
-    if (elapsed >= 80 && Math.abs(dx) > minDistance && Math.abs(dx) > Math.abs(dy) * 2) {
-      navigate(dx < 0 ? 1 : -1);
+    const minDistance = MIN_SWIPE_DISTANCE();
+    const shouldNavigate = wasDragging && elapsed >= 80 && Math.abs(dx) > minDistance && Math.abs(dx) > Math.abs(dy) * 2;
+
+    if (!wasDragging) return;
+
+    if (shouldNavigate) {
+      const dir = dx < 0 ? 1 : -1; // 1 = suivant, -1 = précédent
+      const w = typeof window !== 'undefined' ? window.innerWidth : 400;
+      el.style.transition = 'transform .2s cubic-bezier(.2,.7,.3,1), opacity .2s ease';
+      el.style.transform = `translateX(${dir === 1 ? -w : w}px)`;
+      el.style.opacity = '0';
+      enterDirRef.current = dir;
+      window.setTimeout(() => { navigate(dir); }, 190);
+    } else {
+      // Geste insuffisant : retour en douceur à la position d'origine
+      el.style.transition = 'transform .25s cubic-bezier(.2,.7,.3,1), opacity .25s ease';
+      el.style.transform = 'translateX(0px)';
+      el.style.opacity = '1';
     }
   };
+
+  // Une fois la nouvelle date/vue affichée, on fait entrer le contenu depuis le bord opposé
+  useLayoutEffect(() => {
+    const el = viewTrackRef.current;
+    const dir = enterDirRef.current;
+    if (!el || !dir) return;
+    enterDirRef.current = 0;
+    const w = typeof window !== 'undefined' ? window.innerWidth : 400;
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${dir === 1 ? w : -w}px)`;
+    el.style.opacity = '0';
+    // Forcer le navigateur à prendre en compte la position de départ avant d'animer
+    void el.offsetHeight;
+    requestAnimationFrame(() => {
+      el.style.transition = 'transform .22s cubic-bezier(.2,.7,.3,1), opacity .22s ease';
+      el.style.transform = 'translateX(0px)';
+      el.style.opacity = '1';
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, view]);
 
   const rdvsForDate = useCallback((date: Date) =>
     rendezVous.filter(r => r.date === toISODate(date))
@@ -326,7 +401,7 @@ export default function PlanningPage() {
     const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId);
     const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
     if (error) { toast.error('Erreur suppression de la série'); return; }
-    rdvsSupprimes.forEach(r => store.removeRendezVous(r.id));
+    store.removeRendezVousBatch(rdvsSupprimes.map(r => r.id));
     if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes });
     triggerSave('saved');
     toast.success(`Série récurrente supprimée (${rdvsSupprimes.length} rendez-vous)`);
@@ -701,7 +776,7 @@ export default function PlanningPage() {
           ))}
           {/* Current time indicator */}
           {showNowLine && (
-            <div className="absolute left-0 right-0 z-30 pointer-events-none flex items-center" style={{ top: `${nowTop}px` }}>
+            <div className="absolute left-0 right-0 z-10 pointer-events-none flex items-center" style={{ top: `${nowTop}px` }}>
               <div className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-white flex-shrink-0" style={{ background: '#2563eb' }}>
                 {now.getHours().toString().padStart(2,'0')}:{now.getMinutes().toString().padStart(2,'0')}
               </div>
@@ -746,7 +821,7 @@ export default function PlanningPage() {
     return (
       <div className="flex-1 overflow-auto" style={{ background: '#ffffff' }}>
         {/* Day header */}
-        <div className="sticky top-0 z-30 flex border-b border-slate-200 bg-white shadow-sm" style={{ paddingLeft: '56px' }}>
+        <div className="sticky top-0 z-10 flex border-b border-slate-200 bg-white shadow-sm" style={{ paddingLeft: '56px' }}>
           {days.map(d => {
             const isToday = isSameDay(d, new Date());
             return (
@@ -779,7 +854,7 @@ export default function PlanningPage() {
           ))}
           {/* Current time indicator — only under today's column */}
           {showNowLine && (
-            <div className="absolute z-30 pointer-events-none flex items-center"
+            <div className="absolute z-10 pointer-events-none flex items-center"
               style={{ top: `${nowTop}px`, left: todayLeft, width: todayWidth }}>
               <div className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex-shrink-0 -ml-px" style={{ background: '#2563eb' }}>
                 {now.getHours().toString().padStart(2,'0')}:{now.getMinutes().toString().padStart(2,'0')}
@@ -902,10 +977,12 @@ export default function PlanningPage() {
       <div className="flex-1 flex flex-col min-h-0">
         {/* Scrollable calendar area */}
         <div className="flex-1 min-h-0" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-          onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-          {view === 'jour'    && <DayView />}
-          {view === 'semaine' && <WeekView />}
-          {view === 'mois'    && <MonthView />}
+          onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+          <div ref={viewTrackRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', willChange: 'transform' }}>
+            {view === 'jour'    && <DayView />}
+            {view === 'semaine' && <WeekView />}
+            {view === 'mois'    && <MonthView />}
+          </div>
         </div>
 
         {/* Bottom stats bar — week view only */}

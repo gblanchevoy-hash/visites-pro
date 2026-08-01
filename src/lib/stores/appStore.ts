@@ -51,8 +51,13 @@ interface AppState {
   rendezVous: RendezVous[];
   setRendezVous: (rdvs: RendezVous[]) => void;
   addRendezVous: (rdv: RendezVous) => void;
+  // Ajout groupé en une seule mise à jour d'état (création d'une série récurrente entière)
+  addRendezVousBatch: (rdvs: RendezVous[]) => void;
   updateRendezVous: (rdv: RendezVous) => void;
   removeRendezVous: (id: string) => void;
+  // Suppression groupée en une seule mise à jour d'état (évite de saturer le CPU/stockage
+  // en supprimant un par un lors de la suppression d'une série récurrente entière)
+  removeRendezVousBatch: (ids: string[]) => void;
 
   // Settings
   settings: UserSettings | null;
@@ -226,10 +231,15 @@ export const useAppStore = create<AppState>()(
       rendezVous: [],
       setRendezVous: (rendezVous) => set({ rendezVous }),
       addRendezVous: (rdv) => set((s) => ({ rendezVous: [...s.rendezVous, rdv] })),
+      addRendezVousBatch: (rdvs) => set((s) => ({ rendezVous: [...s.rendezVous, ...rdvs] })),
       updateRendezVous: (rdv) => set((s) => ({
         rendezVous: s.rendezVous.map((r) => r.id === rdv.id ? rdv : r),
       })),
       removeRendezVous: (id) => set((s) => ({ rendezVous: s.rendezVous.filter((r) => r.id !== id) })),
+      removeRendezVousBatch: (ids) => {
+        const idSet = new Set(ids);
+        set((s) => ({ rendezVous: s.rendezVous.filter((r) => !idSet.has(r.id)) }));
+      },
 
       settings: null,
       setSettings: (settings) => set({ settings }),

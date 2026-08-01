@@ -180,7 +180,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
                 toast.error('RDV créé, mais erreur sur les occurrences récurrentes');
               } else if (newOccurrences) {
                 const store = (await import('@/lib/stores/appStore')).useAppStore.getState();
-                newOccurrences.forEach((rdv: unknown) => store.addRendezVous(rdv as import('@/types').RendezVous));
+                store.addRendezVousBatch(newOccurrences as unknown as import('@/types').RendezVous[]);
                 recurrenceCreated = true;
               }
             } catch {
@@ -237,7 +237,7 @@ export default function RdvModal({ rdv, defaultDate, defaultTime, onClose }: Pro
     const rdvsSupprimes = store.rendezVous.filter(r => r.recurrence_id === recurrenceId);
     const { error } = await supabase.from('rendez_vous').delete().eq('recurrence_id', recurrenceId);
     if (error) { toast.error('Erreur suppression de la série'); return; }
-    rdvsSupprimes.forEach(r => store.removeRendezVous(r.id));
+    store.removeRendezVousBatch(rdvsSupprimes.map(r => r.id));
     if (rdvsSupprimes.length) pushHistory({ type: 'DELETE_SERIE', rdvs: rdvsSupprimes });
     toast.success(`Série récurrente supprimée (${rdvsSupprimes.length} rendez-vous)`);
     onClose(true);
